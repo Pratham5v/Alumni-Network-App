@@ -19,9 +19,11 @@ Open the local URL printed by Next.js.
 2. Create an intent. **Use the startup feedback example** fills a realistic scenario; all fields remain editable.
 3. Publish, discover alumni, search or filter, and open a profile.
 4. Send a structured request with context and a commitment.
-5. On the pending request, select **Preview acceptance**. Only acceptance is simulated.
-6. Open the conversation and send a message about arranging the interaction.
-7. Select **Record the outcome**. Choose whether the conversation happened, whether it helped, and whether the intent is resolved.
+5. On the pending request, select **Preview acceptance**.
+6. Open the conversation. The reply is prefilled and read-only; select **Send message**. The alumnus confirms 6 PM after a short pause, and **Share a call link** appears. That button is a visual placeholder and does not open or create a call.
+7. Select **Record the outcome** after the confirmation. Choose whether the conversation happened, whether it helped, and whether the intent is resolved.
+
+The default walkthrough profile is Prathmesh Mehrotra, class of 2026, Software Engineer. Acceptance and the single follow-up reply are scripted; chat is not free-form.
 
 **Not yet** keeps the request open. Completing a conversation can leave the intent active. The app has no real authentication, email delivery, chat backend, calls, AI matching, admin panel, or external integrations. All people, companies and conversations are sample data.
 

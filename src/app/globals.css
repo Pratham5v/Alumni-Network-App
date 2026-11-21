@@ -194,6 +194,11 @@ input::placeholder, textarea::placeholder { color: #89969d; }
 .after-conversation { border-top: 1px solid var(--line); padding-top: 20px; margin-top: 30px; }
 .after-conversation > span { color: var(--muted); font-size: 13px; display: block; margin-bottom: 12px; }
 .after-conversation > .button { width: 100%; }
+.guided-compose { display: flex; flex-direction: column; gap: 10px; margin: 24px 0; }
+.guided-compose textarea { resize: none; background: #f8faf9; color: #405956; }
+.guided-compose .button { margin-top: 7px; }
+.replying { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.call-link-action { display: flex; justify-content: center; margin-top: 2px; animation: enter .2s ease-out both; }
 .outcome-context { background: var(--soft); border-radius: 12px; padding: 20px; margin: 5px 0 30px; }
 .outcome-context p { color: var(--muted); font-size: 13px; margin-top: 7px; }
 .question { border: 0; padding: 0; margin: 0 0 29px; min-width: 0; }

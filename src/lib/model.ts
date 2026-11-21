@@ -23,8 +23,10 @@ export type DemoState = {
   intent: Intent | null;
   request: HelpRequest | null;
   messages: Message[];
+  conversationConfirmed: boolean;
 };
-export const sampleProfile: Profile = { name: "Riya Sharma", batch: "2025", role: "Software Engineer", location: "Gurgaon" };
+export const sampleProfile: Profile = { name: "Prathmesh Mehrotra", batch: "2026", role: "Software Engineer", location: "Gurgaon" };
+export const demoReply = "I’m looking for advice on the product for my new startup. Does 6 PM work for a call?";
 export const sampleIntent: Omit<Intent, "status"> = {
   type: "Seeking advice",
   title: "Feedback on my startup idea",
@@ -32,13 +34,14 @@ export const sampleIntent: Omit<Intent, "status"> = {
   commitment: "20-minute call",
   expires: "14",
 };
-export const initialState: DemoState = { profile: sampleProfile, intent: null, request: null, messages: [] };
+export const initialState: DemoState = { profile: sampleProfile, intent: null, request: null, messages: [], conversationConfirmed: false };
 export type Action =
   | { type: "profile"; profile: Profile }
   | { type: "publish"; intent: Omit<Intent, "status"> }
   | { type: "request"; request: Pick<HelpRequest, "personId" | "message" | "commitment"> }
   | { type: "accept" }
-  | { type: "message"; text: string }
+  | { type: "send-demo-message" }
+  | { type: "confirm-conversation" }
   | { type: "outcome"; outcome: Outcome }
   | { type: "new-journey" }
   | { type: "reset" };
@@ -56,9 +59,12 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
     case "accept":
       if (state.request?.status !== "pending") return state;
       return { ...state, request: { ...state.request, status: "accepted" }, messages: [{ id: 0, from: "alumnus", text: "Happy to help. What would you like to focus on? We can agree on a time here." }] };
-    case "message":
-      if (state.request?.status !== "accepted" || !action.text.trim()) return state;
-      return { ...state, messages: [...state.messages, { id: state.messages.length, from: "you", text: action.text.trim() }] };
+    case "send-demo-message":
+      if (state.request?.status !== "accepted" || state.messages.some(message => message.from === "you")) return state;
+      return { ...state, messages: [...state.messages, { id: state.messages.length, from: "you", text: demoReply }] };
+    case "confirm-conversation":
+      if (state.request?.status !== "accepted" || state.conversationConfirmed || !state.messages.some(message => message.from === "you")) return state;
+      return { ...state, conversationConfirmed: true, messages: [...state.messages, { id: state.messages.length, from: "alumnus", text: "6 PM works for me. Happy to discuss your product idea. Please share a call link here, and we’ll take it from there." }] };
     case "outcome":
       if (state.request?.status !== "accepted") return state;
       if (!action.outcome.happened) return state;

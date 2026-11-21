@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useRef, useState, type ButtonHTMLAttributes, type FormEvent, type ReactNode } from "react";
-import { ArrowLeft, BadgeCheck, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Home, Layers3, LoaderCircle, MapPin, MessageCircle, Plus, Search, Send, ShieldCheck, Sparkles, Users, X } from "lucide-react";
-import { demoReducer, initialState, sampleIntent, sampleProfile, type Commitment, type Intent, type Outcome, type Profile } from "@/lib/model";
+import { ArrowLeft, BadgeCheck, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Home, Layers3, LoaderCircle, MapPin, MessageCircle, Plus, Search, Send, ShieldCheck, Sparkles, Users, Video, X } from "lucide-react";
+import { demoReducer, demoReply, initialState, sampleIntent, sampleProfile, type Commitment, type Intent, type Outcome, type Profile } from "@/lib/model";
 import { people, type Person } from "@/lib/people";
 
 type Screen = "welcome" | "onboard" | "verify" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile";
@@ -41,7 +41,6 @@ export default function AlumniApp() {
   const [expertise, setExpertise] = useState("All expertise");
   const [requestMessage, setRequestMessage] = useState("");
   const [commitment, setCommitment] = useState<Commitment>("20-minute call");
-  const [chat, setChat] = useState("");
   const [outcome, setOutcome] = useState<Partial<Outcome>>({});
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
@@ -53,7 +52,8 @@ export default function AlumniApp() {
   const inside = appScreens.includes(screen);
   const intent = state.intent;
   const request = state.request;
-  const firstName = state.profile.name.trim().split(/\s+/)[0] || "Riya";
+  const firstName = state.profile.name.trim().split(/\s+/)[0] || "Prathmesh";
+  const replySent = state.messages.some(message => message.from === "you");
 
   const go = useCallback((next: Screen) => {
     window.history.pushState({ screen: next }, "", `#${next}`);
@@ -78,6 +78,11 @@ export default function AlumniApp() {
   useEffect(() => {
     if (screen === "conversation") messagesEnd.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [state.messages.length, screen]);
+  useEffect(() => {
+    if (state.request?.status !== "accepted" || !replySent || state.conversationConfirmed) return;
+    const timer = setTimeout(() => dispatch({ type: "confirm-conversation" }), 850);
+    return () => clearTimeout(timer);
+  }, [state.request?.status, replySent, state.conversationConfirmed]);
 
   function delayed(action: () => void) {
     if (busy) return;
@@ -104,7 +109,7 @@ export default function AlumniApp() {
   }
   function restart() {
     timers.current.forEach(clearTimeout); timers.current = [];
-    dispatch({ type: "reset" }); setBusy(false); setToast(""); setProfileForm(sampleProfile); setIntentForm(emptyIntent); setOutcome({}); setSearch(""); setLocation("All locations"); setExpertise("All expertise"); setChat(""); go("welcome");
+    dispatch({ type: "reset" }); setBusy(false); setToast(""); setProfileForm(sampleProfile); setIntentForm(emptyIntent); setOutcome({}); setSearch(""); setLocation("All locations"); setExpertise("All expertise"); go("welcome");
   }
   function personCard(p: Person, compact = false) {
     return <article className="person-card" key={p.id}>
@@ -127,15 +132,15 @@ export default function AlumniApp() {
   switch (screen) {
     case "welcome": content = <div className="welcome">
       <div className="welcome-top"><a className="wordmark" href="#welcome" onClick={e => { e.preventDefault(); go("welcome"); }}><Layers3 size={25} strokeWidth={1.7} />alumni<span className="wordmark-period">.</span></a><span className="demo-label">Interactive demo</span></div>
-      <div className="connection-art" aria-hidden="true"><span className="art-line one" /><span className="art-line two" /><span className="art-line three" /><div className="art-avatar a">RS</div><div className="art-avatar b">AS</div><div className="art-avatar c">NR</div><div className="art-center"><MessageCircle size={35} strokeWidth={1.6} /><span className="art-check"><Check size={13} /></span></div></div>
+      <div className="connection-art" aria-hidden="true"><span className="art-line one" /><span className="art-line two" /><span className="art-line three" /><div className="art-avatar a">PM</div><div className="art-avatar b">AS</div><div className="art-avatar c">NR</div><div className="art-center"><MessageCircle size={35} strokeWidth={1.6} /><span className="art-check"><Check size={13} /></span></div></div>
       <div className="welcome-copy"><span className="eyebrow">Your community. A little closer.</span><h1 ref={headingRef} tabIndex={-1}>Good connections start with a clear ask.</h1><p>Share what you need. Find an alumnus who can help. Make the conversation count.</p></div>
       <div className="welcome-benefits"><span><ShieldCheck size={19} />A verified alumni community</span><span><Clock3 size={19} />Help that fits your availability</span></div>
-      <div className="welcome-bottom"><Button onClick={() => go("onboard")}>Explore the walkthrough</Button><p>Sample profiles and simulated interactions.<br />Nothing is sent. Refresh to start fresh.</p></div>
+      <div className="welcome-bottom"><Button onClick={() => go("onboard")}>Explore the walkthrough</Button><p>Sample profiles and simulated interactions.</p></div>
     </div>; break;
 
     case "onboard": content = <>{back("welcome")}{title("Make yourself at home.", "A few details help your community recognize you.", "Getting started · 1 of 2")}
       <form onSubmit={e => { e.preventDefault(); dispatch({ type: "profile", profile: { ...profileForm, name: profileForm.name.trim(), role: profileForm.role.trim(), location: profileForm.location.trim() } }); go("verify"); }}>
-        <div className="notice soft"><Sparkles size={18} /><p>We’ve filled in a sample profile. You can change it or continue as Riya.</p></div>
+        <div className="notice soft"><Sparkles size={18} /><p>We’ve filled in a sample profile. You can change it or continue as Prathmesh.</p></div>
         <Field label="Full name"><input required autoComplete="name" maxLength={60} value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} /></Field>
         <div className="form-row"><Field label="Graduation year"><Select value={profileForm.batch} onChange={e => setProfileForm({ ...profileForm, batch: e.target.value })}>{["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2016"].map(y => <option key={y}>{y}</option>)}</Select></Field><Field label="Location"><input required maxLength={45} value={profileForm.location} onChange={e => setProfileForm({ ...profileForm, location: e.target.value })} /></Field></div>
         <Field label="Current role"><input required maxLength={60} value={profileForm.role} onChange={e => setProfileForm({ ...profileForm, role: e.target.value })} /></Field>
@@ -185,7 +190,28 @@ export default function AlumniApp() {
 
     case "request": content = request ? <>{back("requests")}{title(request.status === "pending" ? "Your request is sent." : request.status === "accepted" ? "You’re connected." : "Interaction completed.", request.status === "pending" ? "You’ve made the first move." : request.status === "accepted" ? `${recipient.name.split(" ")[0]} is happy to help. Take the conversation forward.` : "Thanks for recording what happened.")}<Tag warm={request.status === "pending"}>{request.status === "pending" ? "Awaiting response" : request.status === "accepted" ? "Request accepted" : "Completed"}</Tag><div className="request-detail-card"><div className="profile-summary"><Avatar person={recipient} /><div><strong>{recipient.name}</strong><p>{recipient.role}</p></div></div><h2>{request.intentTitle}</h2><p className="preserve-lines">{request.message}</p><div className="meta"><Clock3 size={16} />{request.commitment}</div></div><div className="status-line"><span className="status-check"><Check size={15} /></span><div><strong>Request delivered</strong><p>Context and commitment shared.</p></div></div>{request.status !== "pending" && <div className="status-line"><span className="status-check"><Check size={15} /></span><div><strong>{recipient.name.split(" ")[0]} accepted</strong><p>You can arrange the interaction together.</p></div></div>}{request.status === "pending" ? <div className="demo-control"><span className="eyebrow">For this walkthrough</span><p>Preview what happens when {recipient.name.split(" ")[0]} accepts.</p><Button variant="secondary" busy={busy} onClick={() => delayed(() => { dispatch({ type: "accept" }); setToast(`${recipient.name.split(" ")[0]} accepted your request.`); })}>Preview acceptance</Button></div> : <div className="action-footer"><Button onClick={() => go(request.status === "completed" ? "success" : "conversation")}>{request.status === "completed" ? "View outcome" : "Open conversation"}</Button></div>}</> : <Empty icon={<MessageCircle size={27} />} title="No request yet" action={<Button onClick={() => go("people")}>Discover alumni</Button>}>Your next conversation starts with a clear ask.</Empty>; break;
 
-    case "conversation": content = request && request.status !== "pending" ? <>{back("request")}{title("Conversation")}<div className="conversation-person"><Avatar person={recipient} /><div><strong>{recipient.name}</strong><span>{recipient.role}</span></div><BadgeCheck size={19} className="teal" /></div><div className="conversation-context"><span><Check size={15} />Request accepted</span><strong>{request.intentTitle}</strong><small>{request.commitment}</small></div><div className="section-heading"><h2>Arrange the interaction</h2></div><p className="section-description">Agree on a time and share a call link here.</p><div className="messages" aria-label="Conversation messages" aria-live="polite">{state.messages.map(m => <div key={m.id} className={`message ${m.from}`}><span>{m.from === "you" ? "You" : recipient.name.split(" ")[0]}</span><p>{m.text}</p></div>)}<div ref={messagesEnd} /></div>{request.status === "accepted" && <><form className="message-compose" onSubmit={e => { e.preventDefault(); if (chat.trim()) { dispatch({ type: "message", text: chat }); setChat(""); } }}><label className="sr-only" htmlFor="chat-message">Write a message</label><input id="chat-message" maxLength={500} placeholder="Write a message…" value={chat} onChange={e => setChat(e.target.value)} /><button type="submit" aria-label="Send message" disabled={!chat.trim()}><Send size={20} /></button></form><div className="after-conversation"><span>After your conversation</span><Button variant="secondary" onClick={() => { setOutcome({}); go("outcome"); }}>Record the outcome</Button></div></>}</> : <Empty icon={<MessageCircle size={27} />} title="Your conversation starts after acceptance" action={<Button onClick={() => go("request")}>View request</Button>}>Both people agree before the interaction begins.</Empty>; break;
+    case "conversation": content = request && request.status !== "pending" ? <>
+      {back("request")}{title("Conversation")}
+      <div className="conversation-person"><Avatar person={recipient} /><div><strong>{recipient.name}</strong><span>{recipient.role}</span></div><BadgeCheck size={19} className="teal" /></div>
+      <div className="conversation-context"><span><Check size={15} />Request accepted</span><strong>{request.intentTitle}</strong><small>{request.commitment}</small></div>
+      <div className="section-heading"><h2>Arrange the interaction</h2></div>
+      <p className="section-description">Agree on a time and share a call link here.</p>
+      <div className="messages" aria-label="Conversation messages" aria-live="polite">
+        {state.messages.map(m => <div key={m.id} className={`message ${m.from}`}><span>{m.from === "you" ? "You" : recipient.name.split(" ")[0]}</span><p>{m.text}</p></div>)}
+        {replySent && !state.conversationConfirmed && request.status === "accepted" && <p className="replying"><LoaderCircle size={14} className="spin" />{recipient.name.split(" ")[0]} is replying…</p>}
+        {state.conversationConfirmed && <div className="call-link-action"><Button type="button" variant="secondary"><Video size={18} />Share a call link</Button></div>}
+        <div ref={messagesEnd} />
+      </div>
+      {request.status === "accepted" && <>
+        {!replySent && <div className="guided-compose">
+          <label htmlFor="demo-message" className="field-label">Your reply</label>
+          <textarea id="demo-message" readOnly value={demoReply} rows={3} aria-describedby="demo-message-hint" />
+          <span id="demo-message-hint" className="field-hint">A prefilled message for this walkthrough.</span>
+          <Button type="button" onClick={() => dispatch({ type: "send-demo-message" })}><Send size={18} />Send message</Button>
+        </div>}
+        {state.conversationConfirmed && <div className="after-conversation"><span>After your conversation</span><Button variant="secondary" onClick={() => { setOutcome({}); go("outcome"); }}>Record the outcome</Button></div>}
+      </>}
+    </> : <Empty icon={<MessageCircle size={27} />} title="Your conversation starts after acceptance" action={<Button onClick={() => go("request")}>View request</Button>}>Both people agree before the interaction begins.</Empty>; break;
 
     case "outcome": content = request?.status === "accepted" ? <>{back("conversation")}{title("How did it go?", "A quick check-in helps close the loop.")}<div className="outcome-context"><strong>{request.intentTitle}</strong><p>With {recipient.name} · {request.commitment}</p></div><form onSubmit={e => { e.preventDefault(); if (outcome.happened === false) { setToast("No rush. Your request and intent are still open."); go("request"); return; } delayed(() => { dispatch({ type: "outcome", outcome: outcome as Outcome }); go("success"); }); }}><fieldset className="question"><legend>Did the conversation happen?</legend><div className="choices"><Choice name="happened" value="yes" selected={outcome.happened === true} onSelect={() => setOutcome({ happened: true })}>Yes</Choice><Choice name="happened" value="not-yet" selected={outcome.happened === false} onSelect={() => setOutcome({ happened: false })}>Not yet</Choice></div></fieldset>{outcome.happened === true && <div className="reveal"><fieldset className="question"><legend>Was it helpful?</legend><div className="choices">{(["Yes", "Partly", "No"] as const).map(v => <Choice key={v} name="helpful" value={v} selected={outcome.helpful === v} onSelect={() => setOutcome({ ...outcome, helpful: v })}>{v}</Choice>)}</div></fieldset><fieldset className="question"><legend>Is your original need resolved?</legend><div className="choices vertical"><Choice name="resolved" value="yes" selected={outcome.resolved === true} onSelect={() => setOutcome({ ...outcome, resolved: true })}>Yes, mark my intent resolved</Choice><Choice name="resolved" value="no" selected={outcome.resolved === false} onSelect={() => setOutcome({ ...outcome, resolved: false })}>No, keep my intent active</Choice></div></fieldset><p className="quiet-note">Completing an interaction doesn’t have to close your intent.</p></div>}{outcome.happened === false && <div className="notice soft"><Clock3 size={20} /><p>That’s okay. We’ll keep your request open so you can come back after the conversation.</p></div>}<div className="action-footer"><Button type="submit" busy={busy} disabled={outcome.happened === undefined || (outcome.happened && (!outcome.helpful || outcome.resolved === undefined))}>{outcome.happened === false ? "Keep request open" : "Save outcome"}</Button><Button type="button" variant="quiet" onClick={() => go("conversation")}>Skip for now</Button></div></form></> : <Empty icon={<CheckCheck size={27} />} title="Nothing to record yet" action={<Button onClick={() => go("request")}>View request</Button>}>Record the outcome after an accepted interaction.</Empty>; break;
 
