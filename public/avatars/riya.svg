@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Round glasses"><title>Round glasses</title>
+<defs><clipPath id="crop-02-round-glasses"><circle cx="64" cy="64" r="59"/></clipPath></defs>
+<circle cx="64" cy="64" r="59" fill="#c4dfd3"/>
+<g clip-path="url(#crop-02-round-glasses)">
+<g fill="none" stroke="#242320" stroke-linecap="round" stroke-linejoin="round">
+<g stroke-width="1.48"><path d="M81 30 C80 21 84 15 93 16 C103 16 108 23 105 31 C103 38 96 41 91 38"/>
+<path d="M41 62 C33 54 33 40 38 32 C43 22 54 19 66 21 C78 21 88 29 92 40 C94 46 92 54 89 61"/>
+<path d="M41 60 C41 53 43 48 48 45 C58 41 65 43 71 33 C73 41 82 46 86 50 L89 61"/>
+<path d="M42 61 C34 57 34 69 42 72 C46 83 55 91 65 91 C76 91 85 81 89 70 C97 70 97 59 90 60"/>
+<path d="M55 87 L54 96 C53 101 43 102 34 105 C23 108 14 116 10 123 M76 87 L77 96 C79 102 89 102 99 106 C109 110 117 119 120 125"/>
+<path d="M51 100 Q65 110 80 100 M48 103 Q65 116 84 103"/></g>
+<g stroke-width="1.13"><path d="M44 35 C49 29 57 27 63 28 M88 26 C91 22 96 23 99 26"/>
+<path d="M46 53 Q52 50 58 52 M72 52 Q78 50 84 53"/>
+<path d="M65 63 Q62 70 65 71 L68 70 M58 78 Q64 83 72 77"/>
+<path d="M42 60 L45 61 M85 61 L89 60"/><circle cx="54" cy="62" r="8"/><circle cx="76" cy="62" r="8"/><path d="M62 61 Q65 58 68 61"/></g>
+</g>
+<g fill="#242320"><ellipse cx="54" cy="61" rx="1.55" ry="1.76"/><ellipse cx="76" cy="61" rx="1.55" ry="1.76"/></g>
+</g>
+</svg>
