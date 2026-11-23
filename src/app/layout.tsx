@@ -8,5 +8,7 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#285f5b" };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  // Browser extensions can inject attributes on <html> before React hydrates.
+  // Limit suppression to this element so mismatches inside the app remain visible.
+  return <html lang="en" suppressHydrationWarning><body>{children}</body></html>;
 }

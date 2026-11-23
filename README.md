@@ -16,12 +16,17 @@ Open the local URL printed by Next.js.
 ## Review the main journey
 
 1. Select **Explore the walkthrough**, review the sample profile, and enter the network.
-2. Create an intent. **Use the startup feedback example** fills a realistic scenario; all fields remain editable.
+2. Create an intent. The startup feedback example is already filled in; all fields remain editable.
 3. Publish, discover alumni, search or filter, and open a profile.
 4. Send a structured request with context and a commitment.
 5. On the pending request, select **Preview acceptance**.
-6. Open the conversation. The reply is prefilled and read-only; select **Send message**. The alumnus confirms 6 PM after a short pause, and **Share a call link** appears. That button is a visual placeholder and does not open or create a call.
-7. Select **Record the outcome** after the confirmation. Choose whether the conversation happened, whether it helped, and whether the intent is resolved.
+6. Open the conversation. The reply is prefilled and read-only; select **Send message**. The alumnus confirms tomorrow at 6 PM IST after a short pause. **Share a call link** opens a small sheet with a sample link; **Share link** adds it to the chat without opening a meeting. The calendar card then opens a prefilled Google Calendar event with this recipient, agreed slot, request context and shared link.
+7. Select **Record the outcome**. Sample choices are preselected and can be changed. Save the outcome, then return Home.
+8. Riya’s incoming AI interview-preparation request appears on Home and in Requests. Review her intent, message and 20-minute commitment.
+9. **Accept request** opens her conversation with a fixed, prefilled confirmation for tomorrow at 6 PM IST. Riya then sends a sample call link. The event card opens a prefilled Google Calendar event for review and manual saving, with the agreed 20-minute slot, participants, context and sample link. It does not invite anyone or create a meeting.
+10. **Decline request** opens a prefilled response sheet. **Suggest an alternative** recommends the preselected sample alumnus Kabir Mehta, with an editable message. No forwarding or response from Kabir is simulated.
+
+Aarav’s discovery and “Alumni who may help” cards have a sample closest-match tag when an intent is present; no matching algorithm is implemented. Each calendar date is fixed when the conversation is confirmed, using tomorrow in Asia/Kolkata. Calendar links use [Google’s documented prefilled event format](https://developers.google.com/workspace/calendar/api/concepts/inviting-attendees-to-events#provide_a_link_for_users_to_add_the_event); saving remains a user action in Google Calendar.
 
 The default walkthrough profile is Prathmesh Mehrotra, class of 2026, Software Engineer. Acceptance and the single follow-up reply are scripted; chat is not free-form.
 
