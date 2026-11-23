@@ -86,7 +86,6 @@ export default function AlumniApp() {
   const person = people.find(p => p.id === personId) || people[0];
   const recipient = people.find(p => p.id === state.request?.personId) || person;
   const inside = appScreens.includes(screen);
-  const showAppNavigation = inside && screen !== "profile";
   const contactPreview = typeof sheet === "object" ? sheet : null;
   const intent = state.intent;
   const request = state.request;
@@ -479,8 +478,8 @@ export default function AlumniApp() {
   }
 
   const selectedTab = ["create", "intent", "intents"].includes(screen) ? "intents" : ["people", "profile"].includes(screen) ? "people" : ["compose", "requests", "request", "conversation", "outcome", "success", "received-request", "received-conversation"].includes(screen) ? "requests" : "home";
-  return <div className={`app-shell${showAppNavigation ? " workspace-shell" : ""}`} data-screen={screen}>
-    {showAppNavigation && <header className="app-header">
+  return <div className={`app-shell${inside ? " workspace-shell" : ""}`} data-screen={screen}>
+    {inside && <header className="app-header">
       <button className="wordmark" onClick={() => go("home")} aria-label="Alumni home"><Layers3 size={23} strokeWidth={1.7} aria-hidden="true" />alumni<span className="wordmark-period">.</span></button>
       <button className="account-button" aria-label="Your profile" onClick={() => go("my-profile")}><Avatar person={self} size="small" /><span className="account-name">{firstName}</span></button>
     </header>}
@@ -496,7 +495,7 @@ export default function AlumniApp() {
         <div className="action-footer"><Button type="submit" disabled={!(sheet === "decline" ? declineMessage : alternativeMessage).trim()}>{sheet === "decline" ? "Send decline" : "Send recommendation"}</Button></div>
       </form>}
     </Sheet>
-    {showAppNavigation && <nav className="bottom-nav" aria-label="Main navigation">{([{ name: "Home", id: "home", Icon: Home }, { name: "People", id: "people", Icon: Users }, { name: "Intents", id: "intents", Icon: Layers3 }, { name: "Requests", id: "requests", Icon: MessageCircle }] as const).map(({ name, id, Icon }) => <button key={id} aria-current={selectedTab === id ? "page" : undefined} onClick={() => go(id)} className={selectedTab === id ? "active" : ""}><span className="nav-icon"><Icon size={22} strokeWidth={selectedTab === id ? 2 : 1.65} />{id === "requests" && unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span><span>{name}</span></button>)}</nav>}
+    {inside && <nav className="bottom-nav" aria-label="Main navigation">{([{ name: "Home", id: "home", Icon: Home }, { name: "People", id: "people", Icon: Users }, { name: "Intents", id: "intents", Icon: Layers3 }, { name: "Requests", id: "requests", Icon: MessageCircle }] as const).map(({ name, id, Icon }) => <button key={id} aria-current={selectedTab === id ? "page" : undefined} onClick={() => go(id)} className={selectedTab === id ? "active" : ""}><span className="nav-icon"><Icon size={22} strokeWidth={selectedTab === id ? 2 : 1.65} />{id === "requests" && unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span><span>{name}</span></button>)}</nav>}
     <div className="sr-only" role="status" aria-atomic="true">{confirmationMessage}</div>
   </div>;
 }

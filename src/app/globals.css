@@ -377,6 +377,9 @@ input::placeholder, textarea::placeholder { color: #687a75; }
   .welcome-copy h1 { font-size: clamp(30px, 8.5vw, 38px); }
   .welcome-visual { max-width: 231px; }
 }
+@media (width < 720px) {
+  .app-shell[data-screen="profile"] > :is(.app-header, .bottom-nav) { display: none; }
+}
 @media (min-width: 720px) {
   :root { --gutter: 28px; --header-height: 64px; }
   .app-shell[data-screen="welcome"] { width: min(calc(100% - 40px), 1080px); }
@@ -388,11 +391,13 @@ input::placeholder, textarea::placeholder { color: #687a75; }
   .welcome-bottom > .button { width: auto; }
   .welcome-bottom > p { text-align: left; }
   .welcome-visual { grid-area: visual; align-self: center; width: min(100%,430px); }
-  .app-shell[data-screen="onboard"], .app-shell[data-screen="verify"], .app-shell[data-screen="profile"] { width: min(calc(100% - 40px),560px); }
+  .app-shell[data-screen="onboard"], .app-shell[data-screen="verify"] { width: min(calc(100% - 40px),560px); }
   .app-shell[data-screen="onboard"] .main-content, .app-shell[data-screen="verify"] .main-content { padding-top: 27px; }
-  .workspace-shell { width: min(calc(100% - 40px),1000px); min-height: calc(100dvh - 40px); margin: 20px auto; display: grid; grid-template: "header header" var(--header-height) "navigation content" 1fr / 176px minmax(0,1fr); border-radius: 19px; }
+  .workspace-shell { --workspace-gutter: clamp(22px,4vw,44px); width: min(calc(100% - 40px),1000px); min-height: calc(100dvh - 40px); margin: 20px auto; display: grid; grid-template: "header header" var(--header-height) "navigation content" 1fr / 176px minmax(0,1fr); border-radius: 19px; }
   .app-header { grid-area: header; position: relative; border-radius: 19px 19px 0 0; }
-  .workspace-shell .main-content { grid-area: content; min-height: 0; min-width: 0; padding: 24px clamp(22px,4vw,44px) 35px; }
+  .workspace-shell .main-content { grid-area: content; min-height: 0; min-width: 0; padding: 24px var(--workspace-gutter) 35px; }
+  .workspace-shell .alumni-profile { --profile-padding: var(--workspace-gutter); grid-area: content; min-height: 0; min-width: 0; }
+  .workspace-shell .alumni-profile-action { border-bottom-right-radius: 19px; }
   .account-name { display: inline; max-width: 15ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 8px; }
   .bottom-nav { grid-area: navigation; position: sticky; align-self: start; top: 20px; left: auto; bottom: auto; transform: none; width: 100%; min-height: 0; padding: 15px 11px; display: flex; flex-direction: column; gap: 5px; border: 0; background: transparent; }
   .bottom-nav > button { flex-direction: row; justify-content: flex-start; padding: 0 13px; gap: 10px; font-size: 13px; min-height: 44px; }
