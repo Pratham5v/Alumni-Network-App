@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useRef, useState, type ButtonHTMLAttributes, type FormEvent, type ReactNode } from "react";
-import { ArrowLeft, BadgeCheck, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Home, Layers3, LoaderCircle, MapPin, MessageCircle, Plus, Search, Send, ShieldCheck, Sparkles, Users, Video, X } from "lucide-react";
+import Image from "next/image";
+import { ArrowLeft, ArrowRight, BadgeCheck, BriefcaseBusiness, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, GraduationCap, Home, Layers3, Linkedin, LoaderCircle, MapPin, MessageCircle, Plus, Search, Send, ShieldCheck, Sparkles, Users, Video, X } from "lucide-react";
 import { demoReducer, demoReply, incomingScenario, initialState, isValidCallLink, sampleCallLink, sampleIntent, sampleOutcome, sampleProfile, type Commitment, type Intent, type Outcome, type Profile } from "@/lib/model";
 import { people, type Person } from "@/lib/people";
 import { googleCalendarUrl, interviewTimeLabel } from "@/lib/calendar";
@@ -9,6 +10,7 @@ import { googleCalendarUrl, interviewTimeLabel } from "@/lib/calendar";
 type Screen = "welcome" | "onboard" | "verify" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "received-request" | "received-conversation";
 const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "received-request", "received-conversation"];
 type IntentForm = Omit<Intent, "status">;
+type ContactPreview = { title: string; value: string };
 
 function Button({ children, variant = "primary", busy, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "quiet"; busy?: boolean }) {
   return <button {...props} disabled={props.disabled || busy} className={`button ${variant} ${className}`} aria-busy={busy || undefined}>{busy && <LoaderCircle size={18} className="spin" />}{children}</button>;
@@ -35,7 +37,10 @@ function Sheet({ open, title, onClose, children }: { open: boolean; title: strin
     if (open && !dialog.current?.open) dialog.current?.showModal();
     else if (!open && dialog.current?.open) dialog.current.close();
   }, [open]);
-  return <dialog ref={dialog} className="sheet" aria-labelledby="sheet-title" onCancel={onClose} onClose={onClose} onClick={event => {
+  return <dialog ref={dialog} className="sheet" aria-labelledby="sheet-title" onCancel={event => {
+    event.preventDefault();
+    onClose();
+  }} onClick={event => {
     if (event.target !== event.currentTarget) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
@@ -54,7 +59,7 @@ export default function AlumniApp() {
   const [requestMessage, setRequestMessage] = useState("");
   const [commitment, setCommitment] = useState<Commitment>("20-minute call");
   const [outcome, setOutcome] = useState<Partial<Outcome>>(sampleOutcome);
-  const [sheet, setSheet] = useState<"call-link" | "decline" | "alternative" | null>(null);
+  const [sheet, setSheet] = useState<"call-link" | "decline" | "alternative" | ContactPreview | null>(null);
   const [callLink, setCallLink] = useState(sampleCallLink);
   const [declineMessage, setDeclineMessage] = useState<string>(incomingScenario.decline);
   const [alternativeMessage, setAlternativeMessage] = useState<string>(incomingScenario.alternative);
@@ -66,6 +71,8 @@ export default function AlumniApp() {
   const person = people.find(p => p.id === personId) || people[0];
   const recipient = people.find(p => p.id === state.request?.personId) || person;
   const inside = appScreens.includes(screen);
+  const showAppNavigation = inside && screen !== "profile";
+  const contactPreview = typeof sheet === "object" ? sheet : null;
   const intent = state.intent;
   const request = state.request;
   const incoming = state.incoming;
@@ -219,7 +226,50 @@ export default function AlumniApp() {
       {filteredPeople.length ? filteredPeople.map(p => personCard(p)) : <Empty icon={<Search size={27} />} title="No alumni found" action={<Button variant="secondary" onClick={() => { setSearch(""); setLocation("All locations"); setExpertise("All expertise"); }}>Clear filters</Button>}>Try another name or broaden your filters.</Empty>}
     </>; break;
 
-    case "profile": content = <>{back("people")}{title("Alumni profile")}<div className="profile-hero"><Avatar person={person} size="large" /><h2>{person.name}</h2><p>{person.role} · {person.company}</p><div className="meta"><MapPin size={15} />{person.location}<span>·</span>Class of {person.batch}</div><Tag>Open to helping</Tag></div><section className="detail-section"><h2>A little about me</h2><p>{person.about}</p></section><section className="detail-section"><h2>Expertise</h2><div className="expertise-list">{person.expertise.map(x => <span key={x}>{x}</span>)}</div></section><section className="detail-section"><h2>How I can help</h2><p>{person.help}</p></section><div className="commitment-block"><span>Preferred commitment</span><strong><Clock3 size={19} />{person.commitment}</strong></div><div className="action-footer"><Button onClick={() => compose(person)}>{request ? "View request" : intent ? "Request help" : "Create an intent to request help"}</Button></div></>; break;
+    case "profile": {
+      const contacts = [
+        { label: "LinkedIn", title: "Sample LinkedIn profile", value: `linkedin.com/in/demo-${person.name.toLowerCase().replaceAll(" ", "-")}`, icon: <Linkedin size={19} aria-hidden="true" /> },
+        {
+          label: "Gmail", title: "Sample email address", value: `${person.name.toLowerCase().replaceAll(" ", ".")}@example.com`,
+          icon: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3.5 7v10.5h3V9.3m11 0v8.2h3V7M3.5 7l8.5 6.4L20.5 7m-17 0 2-2 6.5 5 6.5-5 2 2" /></svg>,
+        },
+        { label: "Portfolio", title: "Sample portfolio", value: `${person.id}.example.com`, icon: <BriefcaseBusiness size={19} aria-hidden="true" /> },
+      ];
+      content = <>
+        <header className="alumni-profile-header">{back("people", "People")}<span>Alumni profile</span></header>
+        <div className="alumni-profile-content">
+          <div className="alumni-profile-identity">
+            <Image src={`/avatars/${person.id}.svg`} alt="" width={78} height={78} unoptimized />
+            <div>
+              <h1 ref={headingRef} tabIndex={-1}>{person.name}</h1>
+              <p>{person.role} · {person.company}</p>
+              <div className="meta"><span><MapPin size={15} aria-hidden="true" />{person.location}</span><span><GraduationCap size={15} aria-hidden="true" />Class of {person.batch}</span></div>
+            </div>
+          </div>
+          <section className="alumni-profile-help">
+            <Tag><span className="availability-dot" />Open to helping</Tag>
+            <h2><span><MessageCircle size={16} aria-hidden="true" /></span>How I can help</h2>
+            <p>{person.help}</p>
+            <strong><Clock3 size={15} aria-hidden="true" />{person.commitment}</strong>
+          </section>
+          <section className="alumni-profile-section"><h2>Expertise</h2><ul className="alumni-profile-chips">{person.expertise.map(topic => <li key={topic}>{topic}</li>)}</ul></section>
+          <section className="alumni-profile-section"><h2>About</h2><p>{person.about}</p></section>
+          {!!person.currentIntents?.length && <section className="alumni-profile-section">
+            <h2>Current intents</h2>
+            <ul className="alumni-profile-intents">{person.currentIntents.map(entry => <li key={entry.title}><strong>{entry.title}</strong><p>{entry.status}</p></li>)}</ul>
+          </section>}
+          <section className="alumni-profile-section"><h2>Communities</h2><ul className="alumni-profile-chips community-chips">{person.communities.map(community => <li key={community}>{community}</li>)}</ul></section>
+          <section className="alumni-profile-contact">
+            <h2>Contact &amp; links</h2>
+            <div>{contacts.map(({ label, title, value, icon }) => <button key={label} type="button" title={label} aria-label={label} onClick={() => setSheet({ title, value })}>{icon}</button>)}</div>
+          </section>
+        </div>
+        <footer className="alumni-profile-action">
+          <Button className="full-width" onClick={() => compose(person)}>{request ? "View request" : "Request help"}<ArrowRight size={18} aria-hidden="true" /></Button>
+        </footer>
+      </>;
+      break;
+    }
 
     case "compose": content = intent ? <>{back("profile")}{title("Send a request", "A little context goes a long way.")}<div className="profile-summary"><Avatar person={person} /><div><strong>{person.name}</strong><p>{person.role} · {person.location}</p></div></div><form onSubmit={e => { e.preventDefault(); delayed(() => { dispatch({ type: "request", request: { personId: person.id, message: requestMessage.trim(), commitment } }); go("request"); setToast("Request sent. Your next step is ready below."); }); }}><div className="read-only-field"><span>Associated intent</span><strong>{intent.title}</strong></div><Field label="Your message" hint="Share the context and what you’d like their perspective on."><textarea required minLength={15} maxLength={600} rows={5} value={requestMessage} onChange={e => setRequestMessage(e.target.value)} /></Field><Field label="Requested commitment"><Select value={commitment} onChange={e => setCommitment(e.target.value as Commitment)}><option>{person.commitment}</option><option>Chat</option></Select></Field><p className="quiet-note"><ShieldCheck size={16} />Only this alumnus receives your request.</p><div className="action-footer"><Button type="submit" busy={busy} disabled={requestMessage.trim().length < 15}>Send request</Button><Button variant="quiet" type="button" onClick={() => go("profile")}>Cancel</Button></div></form></> : <Empty icon={<Layers3 size={27} />} title="Start with an intent" action={<Button onClick={() => go("create")}>Create an intent</Button>}>A request needs a little context about what you need.</Empty>; break;
 
@@ -302,20 +352,20 @@ export default function AlumniApp() {
 
   const selectedTab = ["create", "intent", "intents"].includes(screen) ? "intents" : ["people", "profile"].includes(screen) ? "people" : ["compose", "requests", "request", "conversation", "outcome", "success", "received-request", "received-conversation"].includes(screen) ? "requests" : "home";
   return <div className={`app-shell ${inside ? "inside" : ""}`}>
-    {inside && <header className="app-header"><button className="wordmark" onClick={() => go("home")} aria-label="Alumni home"><Layers3 size={23} strokeWidth={1.7} />alumni<span className="wordmark-period">.</span></button><button className="account-button" aria-label="Your profile" onClick={() => go("my-profile")}><span>{state.profile.name.split(/\s+/).map(n => n[0]).slice(0, 2).join("")}</span></button></header>}
-    <main id="main-content" className={screen === "welcome" ? "welcome-main" : "main-content"} key={screen}>{content}</main>
-    <Sheet open={sheet !== null} title={sheet === "call-link" ? "Share a call link" : sheet === "decline" ? "Decline request" : "Suggest an alternative"} onClose={() => setSheet(null)}>
-      {sheet === "call-link" ? <form onSubmit={e => { e.preventDefault(); if (!isValidCallLink(callLink.trim())) return; dispatch({ type: "share-call-link", url: callLink, target: "sent" }); setSheet(null); setToast("Call link shared in the conversation."); }}>
+    {showAppNavigation && <header className="app-header"><button className="wordmark" onClick={() => go("home")} aria-label="Alumni home"><Layers3 size={23} strokeWidth={1.7} />alumni<span className="wordmark-period">.</span></button><button className="account-button" aria-label="Your profile" onClick={() => go("my-profile")}><span>{state.profile.name.split(/\s+/).map(n => n[0]).slice(0, 2).join("")}</span></button></header>}
+    <main id="main-content" className={screen === "welcome" ? "welcome-main" : screen === "profile" ? "alumni-profile" : "main-content"} key={screen}>{content}</main>
+    <Sheet open={sheet !== null} title={contactPreview?.title ?? (sheet === "call-link" ? "Share a call link" : sheet === "decline" ? "Decline request" : "Suggest an alternative")} onClose={() => setSheet(null)}>
+      {contactPreview ? <p className="alumni-contact-value">{contactPreview.value}</p> : sheet === "call-link" ? <form onSubmit={e => { e.preventDefault(); if (!isValidCallLink(callLink.trim())) return; dispatch({ type: "share-call-link", url: callLink, target: "sent" }); setSheet(null); setToast("Call link shared in the conversation."); }}>
         <Field label="Call link"><input type="url" required value={callLink} onChange={e => setCallLink(e.target.value)} /></Field>
         <p className="field-hint">This sample link is shared in the chat. No meeting opens.</p>
         <div className="action-footer"><Button type="submit" disabled={!isValidCallLink(callLink.trim())}>Share link</Button></div>
-      </form> : sheet && <form onSubmit={e => { e.preventDefault(); const message = sheet === "decline" ? declineMessage : alternativeMessage; if (!message.trim()) return; dispatch({ type: "respond-incoming", response: sheet === "decline" ? "declined" : "alternative-suggested", message }); setSheet(null); setToast("Your response has been sent to Riya."); }}>
+      </form> : (sheet === "decline" || sheet === "alternative") && <form onSubmit={e => { e.preventDefault(); const message = sheet === "decline" ? declineMessage : alternativeMessage; if (!message.trim()) return; dispatch({ type: "respond-incoming", response: sheet === "decline" ? "declined" : "alternative-suggested", message }); setSheet(null); setToast("Your response has been sent to Riya."); }}>
         {sheet === "alternative" && <div className="recommendation-person"><Avatar person={people[2]} /><div><strong>{people[2].name}</strong><p>{people[2].role} · Class of {people[2].batch}</p><span>System design · Engineering careers</span></div></div>}
         <Field label={sheet === "decline" ? "Message to Riya" : "Recommend Kabir to Riya"}><textarea required rows={5} value={sheet === "decline" ? declineMessage : alternativeMessage} onChange={e => sheet === "decline" ? setDeclineMessage(e.target.value) : setAlternativeMessage(e.target.value)} /></Field>
         <div className="action-footer"><Button type="submit" disabled={!(sheet === "decline" ? declineMessage : alternativeMessage).trim()}>{sheet === "decline" ? "Send decline" : "Send recommendation"}</Button></div>
       </form>}
     </Sheet>
-    {inside && <nav className="bottom-nav" aria-label="Main navigation">{([{ name: "Home", id: "home", Icon: Home }, { name: "People", id: "people", Icon: Users }, { name: "Intents", id: "intents", Icon: Layers3 }, { name: "Requests", id: "requests", Icon: MessageCircle }] as const).map(({ name, id, Icon }) => <button key={id} aria-current={selectedTab === id ? "page" : undefined} onClick={() => go(id)} className={selectedTab === id ? "active" : ""}><span className="nav-icon"><Icon size={22} strokeWidth={selectedTab === id ? 2 : 1.65} />{id === "requests" && unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span><span>{name}</span></button>)}</nav>}
+    {showAppNavigation && <nav className="bottom-nav" aria-label="Main navigation">{([{ name: "Home", id: "home", Icon: Home }, { name: "People", id: "people", Icon: Users }, { name: "Intents", id: "intents", Icon: Layers3 }, { name: "Requests", id: "requests", Icon: MessageCircle }] as const).map(({ name, id, Icon }) => <button key={id} aria-current={selectedTab === id ? "page" : undefined} onClick={() => go(id)} className={selectedTab === id ? "active" : ""}><span className="nav-icon"><Icon size={22} strokeWidth={selectedTab === id ? 2 : 1.65} />{id === "requests" && unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span><span>{name}</span></button>)}</nav>}
     <div className={`toast ${toast ? "visible" : ""}`} role="status" aria-live="polite">{toast && <><Check size={18} /><span>{toast}</span><button aria-label="Dismiss message" onClick={() => setToast("")}><X size={16} /></button></>}</div>
   </div>;
 }

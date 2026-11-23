@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Glasses and stubble"><title>Glasses and stubble</title>
+<defs><clipPath id="crop-06-glasses-and-stubble"><circle cx="64" cy="64" r="59"/></clipPath></defs>
+<circle cx="64" cy="64" r="59" fill="#f2e3b6"/>
+<g clip-path="url(#crop-06-glasses-and-stubble)">
+<g fill="none" stroke="#242320" stroke-linecap="round" stroke-linejoin="round">
+<g stroke-width="1.48"><path d="M40 60 C35 51 36 41 38 35 C40 25 51 20 63 20 C78 19 87 25 92 34 C96 43 93 52 90 60"/>
+<path d="M41 58 C44 50 43 43 46 38 C53 36 60 40 67 36 C72 33 76 31 79 30 C81 36 88 39 89 45 L90 58"/>
+<path d="M41 60 C34 56 34 68 42 71 C45 80 49 85 57 90 C62 93 69 93 75 89 C82 85 86 80 89 71 C96 71 97 59 90 60"/>
+<path d="M55 88 L54 96 C52 101 43 103 34 105 C24 109 16 114 12 122 M76 88 L78 96 C81 101 90 102 99 106 C108 110 114 115 118 121"/>
+<path d="M48 101 Q64 115 83 101 M44 103 Q64 122 87 103"/></g>
+<g stroke-width="1.13"><path d="M47 31 Q54 25 64 26 M53 34 Q61 35 68 31 M84 32 Q90 36 91 41"/>
+<path d="M46 53 Q53 51 59 53 M72 53 Q78 51 84 53 M65 61 L63 67 Q64 70 68 68"/>
+<path d="M57 76 Q64 81 72 75 M51 75 L52 77 M53 80 L54 82 M57 84 L58 86 M62 86 L63 88 M68 86 L69 88 M74 83 L74 85 M78 79 L79 81"/>
+<path d="M41 58 L45 59 M86 59 L90 58"/><path d="M45 57 Q54 55 62 57 L61 63 Q60 68 54 68 Q48 68 46 63 Z M69 57 Q78 55 86 57 L85 63 Q83 68 77 68 Q71 68 70 63 Z M62 59 Q65 57 69 59"/></g>
+</g>
+<g fill="#242320"><ellipse cx="54" cy="61" rx="1.55" ry="1.76"/><ellipse cx="77" cy="61" rx="1.55" ry="1.76"/></g>
+</g>
+</svg>

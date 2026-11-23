@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Side part"><title>Side part</title>
+<defs><clipPath id="crop-04-side-part"><circle cx="64" cy="64" r="59"/></clipPath></defs>
+<circle cx="64" cy="64" r="59" fill="#c5dcea"/>
+<g clip-path="url(#crop-04-side-part)">
+<g fill="none" stroke="#242320" stroke-linecap="round" stroke-linejoin="round">
+<g stroke-width="1.48"><path d="M41 59 C33 52 34 42 37 36 C38 29 43 23 50 22 C58 17 71 17 80 22 C88 25 93 30 96 35 C93 38 91 43 91 49 L89 60"/>
+<path d="M41 59 C44 52 44 44 44 41 C56 43 66 39 74 31 C78 39 83 42 90 44"/>
+<path d="M41 60 C34 56 34 68 42 71 C45 80 52 86 58 88 C62 90 68 90 72 88 C80 85 85 79 89 71 C96 70 98 59 90 60"/>
+<path d="M54 86 L53 96 M76 86 L77 96"/>
+<path d="M52 95 L65 103 L78 95 L84 102 L76 115 L65 105 L54 114 L45 103 Z"/>
+<path d="M46 102 C35 105 22 109 14 120 M83 102 C96 106 110 111 117 121 M65 105 L66 123"/></g>
+<g stroke-width="1.13"><path d="M45 32 C51 26 58 26 66 25 M49 36 Q60 35 67 30 M81 27 Q89 30 91 34"/>
+<path d="M47 53 Q52 51 57 52 M72 52 Q77 50 83 52 M64 58 C64 63 61 67 64 68 L68 67"/>
+<path d="M57 75 Q64 79 72 74 M39 62 Q38 65 42 67 M90 63 Q93 62 90 67"/><circle cx="70" cy="119" r=".75"/></g>
+</g>
+<g fill="#242320"><ellipse cx="53" cy="58" rx="1.55" ry="1.76"/><ellipse cx="77" cy="58" rx="1.55" ry="1.76"/></g>
+</g>
+</svg>

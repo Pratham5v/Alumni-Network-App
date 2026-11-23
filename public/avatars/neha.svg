@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Curly bob"><title>Curly bob</title>
+<defs><clipPath id="crop-01-curly-bob"><circle cx="64" cy="64" r="59"/></clipPath></defs>
+<circle cx="64" cy="64" r="59" fill="#f4c0c8"/>
+<g clip-path="url(#crop-01-curly-bob)">
+<g fill="none" stroke="#242320" stroke-linecap="round" stroke-linejoin="round">
+<g stroke-width="1.48"><path d="M42 84 C36 87 31 82 31 77 C24 77 23 70 27 65 C21 62 23 54 28 51 C24 45 27 39 33 37 C31 31 36 25 42 26 C44 19 51 17 57 20 C62 14 71 16 75 22 C83 19 90 23 91 30 C98 32 101 38 98 44 C104 48 105 56 100 61 C105 68 100 77 94 77 C93 83 86 87 80 83"/>
+<path d="M43 59 C39 47 47 39 54 38 C65 36 69 31 71 28 C70 40 77 43 85 44 C86 48 86 55 86 59"/>
+<path d="M43 59 C34 55 36 69 43 70 C46 81 55 87 64 88 C73 88 81 81 85 70 C92 70 96 58 88 58 L86 59"/>
+<path d="M54 85 L53 94 C51 100 43 101 34 103 C24 105 17 111 12 120 M75 84 L77 94 C79 101 89 101 98 105 C108 109 114 115 118 122"/>
+<path d="M43 101 C49 109 57 112 65 112 C74 112 82 107 86 101"/></g>
+<g stroke-width="1.13"><path d="M46 31 Q50 26 55 27 M82 31 Q89 33 90 39 M32 57 Q31 61 34 63"/>
+<path d="M48 54 Q53 51 58 53 M72 53 Q77 50 82 53 M65 58 C64 62 62 65 64 67 Q65 68 68 67"/>
+<path d="M57 74 Q64 80 72 73 M41 61 Q39 63 43 66 M88 61 Q90 61 87 65"/><circle cx="42" cy="74" r="3"/><circle cx="89" cy="74" r="3"/></g>
+</g>
+<g fill="#242320"><ellipse cx="53" cy="59" rx="1.55" ry="1.76"/><ellipse cx="77" cy="58" rx="1.55" ry="1.76"/></g>
+</g>
+</svg>
