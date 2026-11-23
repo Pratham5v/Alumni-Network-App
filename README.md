@@ -1,52 +1,39 @@
-# Alumni Network — interaction prototype
+# Alumni Network
 
-A small frontend prototype for reviewing the feel of an alumni network. The interface stays in a mobile layout on phones and larger screens.
+A frontend prototype for an alumni network built around current needs and offers. The guided walkthrough follows one request from discovery to outcome, then shows what it feels like to receive a request for help.
+
+[Open the live prototype](https://alumni-network-app-ivory.vercel.app/)
 
 ## Run locally
 
-Requires Node.js 20.9 or newer.
+Use Node.js 20.9 or newer and run these commands from the repository root. If you opened the parent Alumni Network workspace, enter its `frontend` folder first.
 
 ```sh
-npm install
+npm ci
 npm run dev
 ```
 
-Open the local URL printed by Next.js.
+Open [127.0.0.1:3000](http://127.0.0.1:3000/) or use the address printed by Next.js. After pulling a dependency change, install the updated dependencies and restart an already-running dev server so it picks up the new packages.
 
-## Review the main journey
+## Try the walkthrough
 
-1. Select **Explore the walkthrough**, review the sample profile, and enter the network.
-2. Create an intent. The startup feedback example is already filled in; all fields remain editable.
-3. Publish, discover alumni, search or filter, and open a profile.
-4. Send a structured request with context and a commitment.
-5. On the pending request, select **Preview acceptance**.
-6. Open the conversation. The reply is prefilled and read-only; select **Send message**. The alumnus confirms tomorrow at 6 PM IST after a short pause. **Share a call link** opens a small sheet with a sample link; **Share link** adds it to the chat without opening a meeting. The calendar card then opens a prefilled Google Calendar event with this recipient, agreed slot, request context and shared link.
-7. Select **Record the outcome**. Sample choices are preselected and can be changed. Save the outcome, then return Home.
-8. Riya’s incoming AI interview-preparation request appears on Home and in Requests. Review her intent, message and 20-minute commitment.
-9. **Accept request** opens her conversation with a fixed, prefilled confirmation for tomorrow at 6 PM IST. Riya then sends a sample call link. The event card opens a prefilled Google Calendar event for review and manual saving, with the agreed 20-minute slot, participants, context and sample link. It does not invite anyone or create a meeting.
-10. **Decline request** opens a prefilled response sheet. **Suggest an alternative** recommends the preselected sample alumnus Kabir Mehta, with an editable message. No forwarding or response from Kabir is simulated.
+1. Select **Explore the walkthrough**. Review the editable sample details for Prathmesh Mehrotra, class of 2026, and continue through simulated verification.
+2. Create and publish the prefilled startup-feedback intent. Open **Discover alumni** to browse profiles, search, or filter by location and expertise. Aarav Shah’s profile brings his availability, expertise, current intent, and communities into view.
+3. Use **Request help** to review the prefilled message and time commitment. Send it, choose **Preview acceptance**, and open the conversation.
+4. Send the fixed walkthrough reply. After Aarav confirms the time, share the sample call link. **Add to Google Calendar** opens a prefilled event for review and manual saving.
+5. Select **Record the outcome**. **Not yet** keeps the request open. If the conversation happened, you can finish the request and choose whether the intent stays active.
+6. Return Home to find Riya’s incoming AI interview-preparation request. Accept it to send the prefilled reply and receive a sample call link, decline it with an editable response, or suggest Kabir Mehta as an alternative.
 
-Aarav’s discovery and “Alumni who may help” cards have a sample closest-match tag when an intent is present; no matching algorithm is implemented. Each calendar date is fixed when the conversation is confirmed, using tomorrow in Asia/Kolkata. Calendar links use [Google’s documented prefilled event format](https://developers.google.com/workspace/calendar/api/concepts/inviting-attendees-to-events#provide_a_link_for_users_to_add_the_event); saving remains a user action in Google Calendar.
+Confirmations appear inline alongside the relevant step. Desktop uses a shared app layout and sidebar. Phones use bottom tabs, and an alumni profile opens as a full-screen detail view.
 
-The default walkthrough profile is Prathmesh Mehrotra, class of 2026, Software Engineer. Acceptance and the single follow-up reply are scripted; chat is not free-form.
+## Demo behavior
 
-**Not yet** keeps the request open. Completing a conversation can leave the intent active. The app has no real authentication, email delivery, chat backend, calls, AI matching, admin panel, or external integrations. All people, companies and conversations are sample data.
+- Onboarding and verification are simulated. Profiles, contact previews, requests, chat messages, and call links are sample data. The highlighted discovery match is scripted.
+- State is held in React memory. Navigation retains progress within the session. A refresh or **Your profile → Restart walkthrough** starts over. **Try another intent** starts a new outgoing journey while keeping your profile and any existing incoming request.
+- The outgoing walkthrough supports one intent and request at a time. Both chats use scripted replies. Riya’s alternative flow shows the recommendation sent to her and ends there.
+- Calendar event links use the agreed slot, participants, context, and sample call link. The date is set at confirmation using tomorrow at 6 PM in Asia/Kolkata. Saving the event happens in Google Calendar. [Google Calendar event link format](https://developers.google.com/workspace/calendar/api/concepts/inviting-attendees-to-events#provide_a_link_for_users_to_add_the_event)
 
-State lives only in React memory. A refresh or fresh visit starts at the welcome screen. Navigation within the app retains progress. Browser Back/Forward works within a walkthrough. **Restart walkthrough** is available from the profile button.
-
-## Deploy to Vercel
-
-Push this folder as a repository, then import it into Vercel.
-
-- Framework preset: **Next.js**
-- Root directory: repository root (or `frontend` if deploying the parent workspace)
-- Build command: `npm run build`
-- Output directory: `out` (the project uses Next.js static export)
-- Environment variables: none
-
-No database or server configuration is required.
-
-## Checks
+## Checks and deployment
 
 ```sh
 npm test
@@ -54,12 +41,16 @@ npm run typecheck
 npm run build
 ```
 
-## Structure
+The Next.js build exports a static site to `out/`. The GitHub repository is deployed on Vercel, with Web Analytics and Speed Insights wired into the root layout. The prototype uses client-side state and requires no app environment variables or database.
 
-- `src/components/alumni-app.tsx`: screens and user interactions
-- `src/app/globals.css`: mobile layout, visual styling and transitions
-- `src/lib/model.ts`: typed intent/request state and lifecycle rules
-- `src/lib/people.ts`: sample alumni
-- `tests/model.test.ts`: lifecycle and outcome checks
+## Project structure
 
-The core journey is intentionally limited to one intent and one request at a time. A new journey clears the previous demo interaction. Reduced-motion preferences, form labels, radio groups, keyboard focus and navigation states are supported.
+| Path | Purpose |
+| --- | --- |
+| `src/components/alumni-app.tsx` | Screens, navigation, and guided interactions |
+| `src/app/globals.css` | Mobile and desktop layouts, shared styles, and transitions |
+| `src/app/layout.tsx` | Page metadata and Vercel integrations |
+| `src/lib/model.ts` | Sample scenarios, reducer, and lifecycle rules |
+| `src/lib/people.ts` and `public/avatars/` | Demo profiles and illustrated avatars |
+| `src/lib/calendar.ts` | Meeting times and prefilled calendar links |
+| `tests/` | Reducer, request, outcome, and calendar checks |
