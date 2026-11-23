@@ -28,6 +28,9 @@ function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectEle
   return <span className="select-wrap"><select {...props}>{children}</select><ChevronDown size={17} aria-hidden="true" /></span>;
 }
 function Tag({ children, warm = false }: { children: ReactNode; warm?: boolean }) { return <span className={`tag ${warm ? "warm" : ""}`}>{children}</span>; }
+function Confirmation({ message }: { message: string }) {
+  return <p className="inline-confirmation"><span><Check size={14} aria-hidden="true" /></span>{message}</p>;
+}
 function Empty({ icon, title, children, action }: { icon: ReactNode; title: string; children: ReactNode; action?: ReactNode }) {
   return <div className="empty-state"><div className="empty-icon">{icon}</div><h2>{title}</h2><p>{children}</p>{action}</div>;
 }
@@ -75,7 +78,7 @@ export default function AlumniApp() {
   const [declineMessage, setDeclineMessage] = useState<string>(incomingScenario.decline);
   const [alternativeMessage, setAlternativeMessage] = useState<string>(incomingScenario.alternative);
   const [busy, setBusy] = useState(false);
-  const [toast, setToast] = useState("");
+  const [confirmation, setConfirmation] = useState<{ screen: Screen; message: string } | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const conversationEnd = useRef<HTMLDivElement>(null);
@@ -88,14 +91,15 @@ export default function AlumniApp() {
   const intent = state.intent;
   const request = state.request;
   const incoming = state.incoming;
+  const confirmationMessage = confirmation?.screen === screen ? confirmation.message : "";
   const unreadCount = (request && request.status !== "completed" ? 1 : 0) + (incoming?.unread ? 1 : 0);
   const firstName = state.profile.name.trim().split(/\s+/)[0] || "Prathmesh";
   const self = { initials: state.profile.name.split(/\s+/).map(name => name[0]).slice(0, 2).join(""), color: "sage" };
   const replySent = state.messages.some(message => message.from === "you");
 
-  const go = useCallback((next: Screen) => {
+  const go = useCallback((next: Screen, message?: string) => {
     setSheet(null);
-    setToast("");
+    setConfirmation(message ? { screen: next, message } : null);
     window.history.pushState({ screen: next }, "", `#${next}`);
     setScreen(next);
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -104,7 +108,7 @@ export default function AlumniApp() {
     window.history.replaceState({ screen: "welcome" }, "", window.location.pathname);
     const onBack = (event: PopStateEvent) => {
       setSheet(null);
-      setToast("");
+      setConfirmation(null);
       setScreen(event.state?.screen || "welcome");
       window.scrollTo({ top: 0, behavior: "instant" });
     };
@@ -112,11 +116,6 @@ export default function AlumniApp() {
     return () => { window.removeEventListener("popstate", onBack); timers.current.forEach(clearTimeout); };
   }, []);
   useEffect(() => { headingRef.current?.focus({ preventScroll: true }); }, [screen]);
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(""), 4200);
-    return () => clearTimeout(timer);
-  }, [toast]);
   useEffect(() => {
     const length = screen === "received-conversation" ? incoming?.messages.length ?? 0 : state.messages.length;
     if (lastThread.current?.screen === screen && lastThread.current.length < length) {
@@ -145,7 +144,10 @@ export default function AlumniApp() {
     timers.current.push(setTimeout(() => { action(); setBusy(false); }, 500));
   }
   function title(text: string, subtitle?: string, eyebrow?: string) {
-    return <div className="page-heading">{eyebrow && <span className="eyebrow">{eyebrow}</span>}<h1 ref={headingRef} tabIndex={-1}>{text}</h1>{subtitle && <p>{subtitle}</p>}</div>;
+    return <>
+      <div className="page-heading">{eyebrow && <span className="eyebrow">{eyebrow}</span>}<h1 ref={headingRef} tabIndex={-1}>{text}</h1>{subtitle && <p>{subtitle}</p>}</div>
+      {confirmationMessage && <Confirmation message={confirmationMessage} />}
+    </>;
   }
   function back(to: Screen, text = "Back") {
     return <button className="back-link" onClick={() => go(to)}><ArrowLeft size={19} />{text}</button>;
@@ -173,7 +175,7 @@ export default function AlumniApp() {
   }
   function restart() {
     timers.current.forEach(clearTimeout); timers.current = [];
-    dispatch({ type: "reset" }); setBusy(false); setToast(""); setProfileForm(sampleProfile); setIntentForm(sampleIntent); setOutcome(sampleOutcome); setSearch(""); setLocation("All locations"); setExpertise("All expertise"); go("welcome");
+    dispatch({ type: "reset" }); setBusy(false); setProfileForm(sampleProfile); setIntentForm(sampleIntent); setOutcome(sampleOutcome); setSearch(""); setLocation("All locations"); setExpertise("All expertise"); go("welcome");
   }
   function openReceived() { dispatch({ type: "read-incoming" }); go("received-request"); }
   function shareCallLink() { setCallLink(sampleCallLink); setSheet("call-link"); }
@@ -260,7 +262,7 @@ export default function AlumniApp() {
     </>; break;
 
     case "create": content = request ? <>{back("intent")}{title("Your request is already underway.", "Its original context stays with the request. Follow the conversation from here.")}<Button className="full-width" onClick={() => go("request")}>View request</Button></> : <>{back(intent ? "intent" : "home")}{title(intent ? "Edit your intent" : "What do you need?", "A clear ask makes it easier for someone to help.")}
-      <form className="form-card" onSubmit={e => { e.preventDefault(); delayed(() => { dispatch({ type: "publish", intent: { ...intentForm, title: intentForm.title.trim(), context: intentForm.context.trim() } }); go("intent"); setToast(intent ? "Intent updated." : "Intent published."); }); }}>
+      <form className="form-card" onSubmit={e => { e.preventDefault(); delayed(() => { dispatch({ type: "publish", intent: { ...intentForm, title: intentForm.title.trim(), context: intentForm.context.trim() } }); go("intent", intent ? "Intent updated" : "Intent published"); }); }}>
         <Field label="Intent type"><Select value={intentForm.type} onChange={e => setIntentForm({ ...intentForm, type: e.target.value as IntentForm["type"] })}><option>Seeking advice</option><option>Seeking mentorship</option></Select></Field>
         <Field label="Give it a title" hint="Keep it specific, so the right person recognizes it."><input required minLength={6} maxLength={80} placeholder="e.g. Feedback on my startup idea" value={intentForm.title} onChange={e => setIntentForm({ ...intentForm, title: e.target.value })} /></Field>
         <Field label="A little context" hint={`${intentForm.context.length}/400 characters`}><textarea required minLength={15} maxLength={400} rows={4} placeholder="What are you working on, and what would help?" value={intentForm.context} onChange={e => setIntentForm({ ...intentForm, context: e.target.value })} /></Field>
@@ -342,7 +344,7 @@ export default function AlumniApp() {
         <div className="profile-summary"><Avatar person={person} /><div><span>To</span><strong>{person.name}</strong><p>{person.role} · {person.location}</p></div></div>
         <div className="recipient-intent"><Layers3 size={17} aria-hidden="true" /><div><span>Your intent</span><strong>{intent.title}</strong></div></div>
       </div>
-      <form className="form-card" onSubmit={e => { e.preventDefault(); delayed(() => { dispatch({ type: "request", request: { personId: person.id, message: requestMessage.trim(), commitment } }); go("request"); setToast("Request sent."); }); }}>
+      <form className="form-card" onSubmit={e => { e.preventDefault(); delayed(() => { dispatch({ type: "request", request: { personId: person.id, message: requestMessage.trim(), commitment } }); go("request", `Delivered to ${person.name}`); }); }}>
         <Field label="Your message" hint="Share the context and what you’d like their perspective on."><textarea required minLength={15} maxLength={600} rows={5} value={requestMessage} onChange={e => setRequestMessage(e.target.value)} /></Field>
         <Field label="Requested commitment"><Select value={commitment} onChange={e => setCommitment(e.target.value as Commitment)}><option>{person.commitment}</option><option>Chat</option></Select></Field>
         <p className="quiet-note"><ShieldCheck size={16} aria-hidden="true" />Only this alumnus receives your request.</p>
@@ -371,12 +373,12 @@ export default function AlumniApp() {
         <div className="meta"><Clock3 size={16} aria-hidden="true" />{request.commitment}</div>
       </article>
       <ol className="request-progress">
-        <li className="status-line"><span className="status-check"><Check size={15} aria-hidden="true" /></span><div><strong>Request delivered</strong><p>Context and time commitment shared.</p></div></li>
+        {(request.status !== "pending" || !confirmationMessage) && <li className="status-line"><span className="status-check"><Check size={15} aria-hidden="true" /></span><div><strong>Request delivered</strong><p>Context and time commitment shared.</p></div></li>}
         <li className="status-line"><span className={request.status === "pending" ? "status-check status-waiting" : "status-check"}>{request.status === "pending" ? <Clock3 size={15} aria-hidden="true" /> : <Check size={15} aria-hidden="true" />}</span><div><strong>{request.status === "pending" ? "Awaiting response" : `${recipient.name.split(" ")[0]} accepted`}</strong><p>{request.status === "pending" ? "Once accepted, you can arrange a time together." : "You can arrange the interaction in your conversation."}</p></div></li>
       </ol>
       {request.status === "pending" ? <div className="demo-control">
         <span className="eyebrow">Walkthrough</span><p>See what happens when {recipient.name.split(" ")[0]} accepts.</p>
-        <Button variant="secondary" busy={busy} onClick={() => delayed(() => { dispatch({ type: "accept" }); setToast(`${recipient.name.split(" ")[0]} accepted your request.`); })}>Preview acceptance<ArrowRight size={17} aria-hidden="true" /></Button>
+        <Button variant="secondary" busy={busy} onClick={() => delayed(() => { dispatch({ type: "accept" }); setConfirmation({ screen: "request", message: `${recipient.name.split(" ")[0]} accepted your request.` }); })}>Preview acceptance<ArrowRight size={17} aria-hidden="true" /></Button>
       </div> : <div className="action-footer"><Button onClick={() => go(request.status === "completed" ? "success" : "conversation")}>{request.status === "completed" ? "View outcome" : "Open conversation"}<ArrowRight size={17} aria-hidden="true" /></Button></div>}
     </> : <Empty icon={<MessageCircle size={27} />} title="No request yet" action={<Button onClick={() => go("people")}>Discover alumni</Button>}>Your next conversation starts with a clear ask.</Empty>; break;
 
@@ -424,6 +426,7 @@ export default function AlumniApp() {
         {replySent && !state.conversationConfirmed && request.status === "accepted" && <p className="replying"><LoaderCircle size={14} className="spin" />{recipient.name.split(" ")[0]} is replying…</p>}
       </Thread>
       {state.conversationConfirmed && !state.callLink && request.status === "accepted" && <div className="call-link-action"><Button type="button" onClick={shareCallLink}><Video size={18} aria-hidden="true" />Share a call link</Button></div>}
+      {confirmationMessage && <Confirmation message={confirmationMessage} />}
       {state.callLink && state.meeting && <section className="calendar-card" aria-label="Agreed call">
         <CalendarDays size={23} /><div><h2>Startup feedback with {recipient.name.split(" ")[0]}</h2><p>{interviewTimeLabel(state.meeting)}</p></div>
         <a className="button secondary" href={googleCalendarUrl(state.meeting, state.callLink, state.profile.name, { title: `Startup feedback with ${recipient.name.split(" ")[0]}`, otherName: recipient.name, context: `${request.intentTitle}\n\n${request.message}` })} target="_blank" rel="noopener noreferrer">Add to Google Calendar</a>
@@ -443,7 +446,7 @@ export default function AlumniApp() {
     case "outcome": content = request?.status === "accepted" ? <>
       {back("conversation", "Conversation")}{title("How did it go?", "A quick check-in helps close the loop.", "Interaction outcome")}
       <div className="outcome-context"><Avatar person={recipient} size="small" /><div><strong>{request.intentTitle}</strong><p>With {recipient.name} · {request.commitment}</p></div></div>
-      <form onSubmit={e => { e.preventDefault(); if (outcome.happened === false) { go("request"); setToast("Your request and intent are still open."); return; } delayed(() => { dispatch({ type: "outcome", outcome: outcome as Outcome }); go("success"); }); }}>
+      <form onSubmit={e => { e.preventDefault(); if (outcome.happened === false) { go("request", "Your request and intent are still open."); return; } delayed(() => { dispatch({ type: "outcome", outcome: outcome as Outcome }); go("success"); }); }}>
         <fieldset className="question"><legend>Did the conversation happen?</legend><div className="choices"><Choice name="happened" value="yes" selected={outcome.happened === true} onSelect={() => setOutcome({ happened: true })}>Yes</Choice><Choice name="happened" value="not-yet" selected={outcome.happened === false} onSelect={() => setOutcome({ happened: false })}>Not yet</Choice></div></fieldset>
         {outcome.happened === true && <div className="reveal">
           <fieldset className="question"><legend>Was it helpful?</legend><div className="choices">{(["Yes", "Partly", "No"] as const).map(value => <Choice key={value} name="helpful" value={value} selected={outcome.helpful === value} onSelect={() => setOutcome({ ...outcome, helpful: value })}>{value}</Choice>)}</div></fieldset>
@@ -483,17 +486,17 @@ export default function AlumniApp() {
     </header>}
     <main id="main-content" className={screen === "welcome" ? "welcome-main" : screen === "profile" ? "alumni-profile" : "main-content"} key={screen}>{content}</main>
     <Sheet open={sheet !== null} title={contactPreview?.title ?? (sheet === "call-link" ? "Share a call link" : sheet === "decline" ? "Decline request" : "Suggest an alternative")} onClose={() => setSheet(null)}>
-      {contactPreview ? <p className="alumni-contact-value">{contactPreview.value}</p> : sheet === "call-link" ? <form onSubmit={e => { e.preventDefault(); if (!isValidCallLink(callLink.trim())) return; dispatch({ type: "share-call-link", url: callLink, target: "sent" }); setSheet(null); setToast("Call link shared in the conversation."); }}>
+      {contactPreview ? <p className="alumni-contact-value">{contactPreview.value}</p> : sheet === "call-link" ? <form onSubmit={e => { e.preventDefault(); if (!isValidCallLink(callLink.trim())) return; dispatch({ type: "share-call-link", url: callLink, target: "sent" }); setSheet(null); setConfirmation({ screen: "conversation", message: "Call link shared in the conversation." }); }}>
         <Field label="Call link"><input type="url" required value={callLink} onChange={e => setCallLink(e.target.value)} /></Field>
         <p className="field-hint">This sample link is shared in the chat. No meeting opens.</p>
         <div className="action-footer"><Button type="submit" disabled={!isValidCallLink(callLink.trim())}>Share link</Button></div>
-      </form> : (sheet === "decline" || sheet === "alternative") && <form onSubmit={e => { e.preventDefault(); const message = sheet === "decline" ? declineMessage : alternativeMessage; if (!message.trim()) return; dispatch({ type: "respond-incoming", response: sheet === "decline" ? "declined" : "alternative-suggested", message }); setSheet(null); setToast("Your response has been sent to Riya."); }}>
+      </form> : (sheet === "decline" || sheet === "alternative") && <form onSubmit={e => { e.preventDefault(); const message = sheet === "decline" ? declineMessage : alternativeMessage; if (!message.trim()) return; dispatch({ type: "respond-incoming", response: sheet === "decline" ? "declined" : "alternative-suggested", message }); setSheet(null); setConfirmation({ screen: "received-request", message: "Your response has been sent to Riya." }); }}>
         {sheet === "alternative" && <div className="recommendation-person"><Avatar person={people[2]} /><div><strong>{people[2].name}</strong><p>{people[2].role} · Class of {people[2].batch}</p><span>System design · Engineering careers</span></div></div>}
         <Field label={sheet === "decline" ? "Message to Riya" : "Recommend Kabir to Riya"}><textarea required rows={5} value={sheet === "decline" ? declineMessage : alternativeMessage} onChange={e => sheet === "decline" ? setDeclineMessage(e.target.value) : setAlternativeMessage(e.target.value)} /></Field>
         <div className="action-footer"><Button type="submit" disabled={!(sheet === "decline" ? declineMessage : alternativeMessage).trim()}>{sheet === "decline" ? "Send decline" : "Send recommendation"}</Button></div>
       </form>}
     </Sheet>
     {showAppNavigation && <nav className="bottom-nav" aria-label="Main navigation">{([{ name: "Home", id: "home", Icon: Home }, { name: "People", id: "people", Icon: Users }, { name: "Intents", id: "intents", Icon: Layers3 }, { name: "Requests", id: "requests", Icon: MessageCircle }] as const).map(({ name, id, Icon }) => <button key={id} aria-current={selectedTab === id ? "page" : undefined} onClick={() => go(id)} className={selectedTab === id ? "active" : ""}><span className="nav-icon"><Icon size={22} strokeWidth={selectedTab === id ? 2 : 1.65} />{id === "requests" && unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span><span>{name}</span></button>)}</nav>}
-    <div className={`toast ${toast ? "visible" : ""}`} role="status" aria-live="polite">{toast && <><Check size={18} /><span>{toast}</span><button aria-label="Dismiss message" onClick={() => setToast("")}><X size={16} /></button></>}</div>
+    <div className="sr-only" role="status" aria-atomic="true">{confirmationMessage}</div>
   </div>;
 }
