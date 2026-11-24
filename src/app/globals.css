@@ -486,7 +486,18 @@ input::placeholder, textarea::placeholder { color: #687a75; }
 .verification-card dl > div, .summary-card dl > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--line); }
 .verification-card dt, .summary-card dt { color: var(--muted); }
 .verification-card dd, .summary-card dd { margin: 0; font-weight: 650; text-align: right; overflow-wrap: anywhere; }
-.verification-card .text-button { min-height: 44px; padding-bottom: 4px; }
+.verification-status:not(:empty) { margin-top: 12px; }
+.verification-status .inline-confirmation, .verification-status .quiet-note { margin-block: 0; }
+.verification-actions { margin-top: 12px; }
+.university-card .university-icon { flex: none; width: 44px; height: 44px; margin: 0; border-radius: 11px; }
+.alumni-details-form { margin-top: 12px; }
+.alumni-details-form fieldset { min-width: 0; padding: 0; margin: 0; border: 0; }
+.alumni-details-form legend { padding: 0; margin-bottom: 12px; font-weight: 700; }
+.alumni-details-form fieldset > .field:last-child { margin-bottom: 0; }
+.verification-status .notice { margin: 0; }
+.demo-account-option { width: 100%; margin-top: 11px; padding: 10px; text-align: left; background: var(--soft); border: 1px solid var(--line); border-radius: 11px; }
+.demo-account-option:hover { border-color: var(--teal); }
+.demo-account-option div span { display: block; color: var(--muted); font-size: 13px; }
 .self-profile-identity > div { min-width: 0; overflow-wrap: anywhere; }
 .self-profile-identity .meta > span { white-space: normal; }
 .self-profile-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -593,6 +604,10 @@ input::placeholder, textarea::placeholder { color: #687a75; }
   .entry-layout .walkthrough-unavailable { grid-template-columns: 32px minmax(0,1fr); min-height: 47px; padding-block: 6px; }
   .entry-layout .walkthrough-unavailable .walkthrough-icon { width: 32px; height: 32px; background: transparent; }
   .walkthrough-admin-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .entry-record { padding: 12px; border: 1px solid var(--line); border-radius: var(--card-radius); }
+  .entry-record .alumni-details-form { padding: 0; border: 0; background: transparent; }
+  .entry-record .alumni-details-form .field { margin-bottom: 10px; }
+  .entry-record .alumni-details-form fieldset > .field:last-child { margin-bottom: 0; }
   .workspace-shell { --workspace-gutter: clamp(22px,4vw,44px); width: min(calc(100% - 40px),1000px); min-height: calc(100dvh - 40px); margin: 20px auto; display: grid; grid-template: "header header" var(--header-height) "navigation content" 1fr / 176px minmax(0,1fr); border-radius: 19px; }
   .app-header { grid-area: header; position: relative; border-radius: 19px 19px 0 0; }
   .workspace-shell .main-content { grid-area: content; min-height: 0; min-width: 0; padding: 24px var(--workspace-gutter) 35px; }

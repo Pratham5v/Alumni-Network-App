@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, Award, BadgeCheck, BriefcaseBusiness, Building2, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Compass, Eye, GraduationCap, Home, Layers3, Linkedin, LoaderCircle, Mail, MapPin, MessageCircle, Phone, Plus, RotateCcw, Search, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Users, Video, X } from "lucide-react";
-import { demoReducer, demoReply, incomingScenario, initialState, isValidCallLink, sampleCallLink, sampleIntent, sampleOutcome, sampleProfile, sampleProfileLinks, type Commitment, type ContactVisibility, type Intent, type Message, type Outcome, type Profile, type ProfileDetails, type ProfilePreferences } from "@/lib/model";
+import { ArrowLeft, ArrowRight, Award, BadgeCheck, BriefcaseBusiness, Building2, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Compass, Eye, GraduationCap, Home, Info, Layers3, Linkedin, LoaderCircle, Mail, MapPin, MessageCircle, Phone, Plus, RotateCcw, Search, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Users, Video, X } from "lucide-react";
+import { demoReducer, demoReply, incomingScenario, initialState, isValidCallLink, sampleCallLink, sampleIntent, sampleOutcome, sampleProfileLinks, type Commitment, type ContactVisibility, type Intent, type Message, type Outcome, type ProfileDetails, type ProfilePreferences } from "@/lib/model";
+import { initialOnboardingState, onboardingReducer, recordDifferences, sampleUniversityAccount } from "@/lib/onboarding";
 import { people, relevanceToIntent, type Person } from "@/lib/people";
 import { googleCalendarUrl, interviewTimeLabel } from "@/lib/calendar";
 import { aiLecture, alumniEvents, distinguishedAlumnus, eventDateBadge, eventDateLabel, type AlumniEvent } from "@/lib/events";
@@ -125,7 +126,7 @@ function Sheet({ open, title, onClose, children }: { open: boolean; title: strin
 export default function AlumniApp() {
   const [state, dispatch] = useReducer(demoReducer, initialState);
   const [screen, setScreen] = useState<Screen>("welcome");
-  const [profileForm, setProfileForm] = useState<Profile>(sampleProfile);
+  const [onboarding, updateOnboarding] = useReducer(onboardingReducer, initialOnboardingState);
   const [intentForm, setIntentForm] = useState<IntentForm>(sampleIntent);
   const [personId, setPersonId] = useState("aarav");
   const [eventPage, setEventPage] = useState(defaultEventPage);
@@ -139,7 +140,7 @@ export default function AlumniApp() {
   const [requestMessage, setRequestMessage] = useState("");
   const [commitment, setCommitment] = useState<Commitment>("20-minute call");
   const [outcome, setOutcome] = useState<Partial<Outcome>>(sampleOutcome);
-  const [sheet, setSheet] = useState<"call-link" | "decline" | "alternative" | "attendees" | ContactPreview | null>(null);
+  const [sheet, setSheet] = useState<"call-link" | "decline" | "alternative" | "attendees" | "demo-google" | ContactPreview | null>(null);
   const [callLink, setCallLink] = useState(sampleCallLink);
   const [declineMessage, setDeclineMessage] = useState<string>(incomingScenario.decline);
   const [alternativeMessage, setAlternativeMessage] = useState<string>(incomingScenario.alternative);
@@ -244,7 +245,7 @@ export default function AlumniApp() {
       <div className="setup-progress" role="group" aria-label={`Getting started, step ${step} of 2`}>
         <span>Getting started</span><span aria-hidden="true">{step} of 2</span>
         <div aria-hidden="true"><i className="filled" /><i className={step === 2 ? "filled" : ""} /></div>
-        <div className="setup-step-labels" aria-hidden="true"><span className={step === 1 ? "current" : undefined}>Profile details</span><span className={step === 2 ? "current" : undefined}>Verification</span></div>
+        <div className="setup-step-labels" aria-hidden="true"><span className={step === 1 ? "current" : undefined}>University account</span><span className={step === 2 ? "current" : undefined}>Alumni details</span></div>
       </div>
       {title(heading, description)}
     </>;
@@ -278,7 +279,7 @@ export default function AlumniApp() {
   }
   function restart() {
     timers.current.forEach(clearTimeout); timers.current = [];
-    dispatch({ type: "reset" }); setProfileForm(sampleProfile); setBusy(false); setIntentForm(sampleIntent); setOutcome(sampleOutcome); clearDiscoveryFilters(); setFiltersOpen(false); go("welcome");
+    dispatch({ type: "reset" }); updateOnboarding({ type: "reset" }); setBusy(false); setIntentForm(sampleIntent); setOutcome(sampleOutcome); clearDiscoveryFilters(); setFiltersOpen(false); go("welcome");
   }
   function openReceived() { dispatch({ type: "read-incoming" }); go("received-request"); }
   function shareCallLink() { setCallLink(sampleCallLink); setSheet("call-link"); }
@@ -368,7 +369,7 @@ export default function AlumniApp() {
             <span><strong>Core Application</strong><small>Explore Intents, people and events</small></span>
             <ArrowRight size={17} aria-hidden="true" />
           </button>
-          <button type="button" className="walkthrough-choice" onClick={() => { setProfileForm(state.profile); go("onboard"); }}>
+          <button type="button" className="walkthrough-choice" onClick={() => { updateOnboarding({ type: "reset" }); go("onboard"); }}>
             <span className="walkthrough-icon"><ShieldCheck size={20} aria-hidden="true" /></span>
             <span><strong>Signup &amp; verification</strong><small>Set up your alumni profile and verify your affiliation.</small></span>
             <ArrowRight size={17} aria-hidden="true" />
@@ -384,28 +385,84 @@ export default function AlumniApp() {
 
     case "onboard": content = <>{entryHeader("walkthroughs", "Walkthroughs")}
       <div className="entry-layout">
-        {setupHeading(1, "Make yourself at home", "A few details help your community recognize you.")}
-        <form className="form-card" onSubmit={e => { e.preventDefault(); dispatch({ type: "profile", profile: { ...profileForm, name: profileForm.name.trim(), role: profileForm.role.trim(), location: profileForm.location.trim() } }); go("verify"); }}>
-          <div className="notice soft"><Sparkles size={18} aria-hidden="true" /><p>Continue with the sample details or make them your own.</p></div>
-          <Field label="Full name"><input required autoComplete="name" maxLength={60} value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} /></Field>
-          <div className="form-row"><Field label="Graduation year"><Select value={profileForm.batch} onChange={e => setProfileForm({ ...profileForm, batch: e.target.value })}>{["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2016"].map(y => <option key={y}>{y}</option>)}</Select></Field><Field label="Location"><input required maxLength={45} value={profileForm.location} onChange={e => setProfileForm({ ...profileForm, location: e.target.value })} /></Field></div>
-          <Field label="Current role"><input required maxLength={60} value={profileForm.role} onChange={e => setProfileForm({ ...profileForm, role: e.target.value })} /></Field>
-          <div className="action-footer"><Button type="submit" disabled={!profileForm.name.trim() || !profileForm.location.trim() || !profileForm.role.trim()}>Continue<ArrowRight size={18} aria-hidden="true" /></Button></div>
-      </form></div>
+        {setupHeading(1, "Make yourself at home", "Connect your university account to start verifying your alumni status.")}
+        <div>
+          <section className="verification-card university-card" aria-label="University account">
+            <div className="verification-identity">
+              <span className="empty-icon university-icon"><GraduationCap size={24} aria-hidden="true" /></span>
+              <div><h2>{sampleUniversityAccount.institution}</h2><p>Use your university email to connect your account.</p></div>
+            </div>
+            <div className="action-footer verification-actions">
+              <Button variant="secondary" aria-haspopup="dialog" onClick={() => setSheet("demo-google")}>Continue with Google · Demo<ArrowRight size={17} aria-hidden="true" /></Button>
+              <Button variant="quiet" onClick={() => { updateOnboarding({ type: "manual" }); go("verify"); }}>I don’t have access to my university email</Button>
+            </div>
+          </section>
+          <p className="quiet-note"><Info size={17} aria-hidden="true" />This walkthrough uses a sample Google account.</p>
+        </div>
+      </div>
     </>; break;
 
-    case "verify": content = <>{entryHeader("onboard", "Profile details")}
-      <div className="entry-layout">
-        {setupHeading(2, "One community. Built on trust.", "Alumni verification helps keep your network relevant and welcoming.")}
-        <section className="verification-card">
-          <div className="verification-identity"><Avatar person={self} /><div><h2>{state.profile.name}</h2><p>{state.profile.role}</p></div><ShieldCheck size={23} aria-hidden="true" /></div>
-          <dl><div><dt>Graduation year</dt><dd>{state.profile.batch}</dd></div><div><dt>Location</dt><dd>{state.profile.location}</dd></div></dl>
-          <button className="text-button" onClick={() => go("onboard")}>Edit details</button>
-        </section>
-        <div className="notice soft"><BadgeCheck size={20} aria-hidden="true" /><div><strong>Verified for this walkthrough</strong><p>You can continue with this demo profile.</p></div></div>
-        <div className="action-footer"><Button onClick={() => go("home")}>Enter the network<ArrowRight size={18} aria-hidden="true" /></Button></div>
-    </div>
-    </>; break;
+    case "verify": {
+      const { details, method, result } = onboarding;
+      if (!method) {
+        content = <>{entryHeader("onboard", "University account")}<div className="entry-layout">
+          {title("Choose a verification method", "Select a university account or continue with manual verification.")}
+          <div><Button onClick={() => go("onboard")}>Continue to university account</Button></div>
+        </div></>;
+        break;
+      }
+      const manual = method === "manual";
+      const matched = result === "matched";
+      const pendingReview = result === "review-requested";
+      const needsReview = result === "needs-review";
+      content = <>{entryHeader("onboard", "University account")}
+        <div className="entry-layout">
+          {setupHeading(2, "One community. Built on trust.", manual ? "Enter your alumni details so they can be reviewed." : "Confirm your academic details so we can check your alumni record.")}
+          <div className="entry-record">
+            <section className="verification-card university-card" aria-label="Verification method">
+              <div className="verification-identity">
+                <span className="empty-icon university-icon"><GraduationCap size={22} aria-hidden="true" /></span>
+                <div><h2>{sampleUniversityAccount.institution}</h2><p>{manual ? "Manual verification" : sampleUniversityAccount.email}</p></div>
+              </div>
+            </section>
+            <form className="form-card alumni-details-form" onSubmit={event => {
+              event.preventDefault();
+              if (matched) {
+                dispatch({ type: "profile", profile: { ...state.profile, name: details.name.trim(), batch: details.batch } });
+                go("home");
+                return;
+              }
+              const submitter = (event.nativeEvent as SubmitEvent).submitter;
+              updateOnboarding({ type: manual || (submitter instanceof HTMLButtonElement && submitter.value === "review") ? "request-review" : "check" });
+            }}>
+              <fieldset disabled={pendingReview}>
+                <legend>Alumni details</legend>
+                <Field label="Full name"><input required autoComplete="name" maxLength={60} value={details.name} onChange={e => updateOnboarding({ type: "edit", field: "name", value: e.target.value })} /></Field>
+                <div className="form-row">
+                  <Field label="Graduation year"><input required inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder="2026" value={details.batch} onChange={e => updateOnboarding({ type: "edit", field: "batch", value: e.target.value })} /></Field>
+                  <Field label="Degree"><input required maxLength={45} placeholder="B.E." value={details.degree} onChange={e => updateOnboarding({ type: "edit", field: "degree", value: e.target.value })} /></Field>
+                </div>
+                <Field label="Branch"><input required maxLength={75} placeholder="Computer Science" value={details.branch} onChange={e => updateOnboarding({ type: "edit", field: "branch", value: e.target.value })} /></Field>
+              </fieldset>
+              <div className="verification-status" role="status" aria-atomic="true">
+                {matched && <Confirmation message="Record matched. Alumni status verified for this walkthrough." />}
+                {needsReview && <div className="notice soft"><Info size={18} aria-hidden="true" /><div><strong>Details need review</strong><p>Check your {recordDifferences(details).join(", ")} or request manual review.</p></div></div>}
+                {pendingReview && <div className="notice soft"><Clock3 size={18} aria-hidden="true" /><div><strong>Review requested for this walkthrough</strong><p>Your details are pending manual verification in the demo.</p></div></div>}
+              </div>
+              <div className="action-footer verification-actions">
+                {pendingReview ? <Button type="button" variant="secondary" onClick={() => go("walkthroughs")}>Back to walkthroughs</Button> :
+                  <Button type="submit" disabled={!details.name.trim() || !details.degree.trim() || !details.branch.trim()}>
+                    {matched ? <>Enter alumni app<ArrowRight size={18} aria-hidden="true" /></> :
+                      manual ? "Request manual review" : <>Check alumni record<ShieldCheck size={18} aria-hidden="true" /></>}
+                  </Button>}
+                {needsReview && <Button type="submit" value="review" variant="secondary">Request manual review</Button>}
+              </div>
+            </form>
+          </div>
+        </div>
+      </>;
+      break;
+    }
 
     case "home": content = <>{title(`Hi, ${firstName}.`, undefined, "BITS alumni network")}
       {incoming && incomingHomeCard()}
@@ -873,8 +930,15 @@ export default function AlumniApp() {
       <button className="account-button" aria-label="Your profile" onClick={() => go("my-profile")}><Avatar person={self} size="small" /><span className="account-name">{firstName}</span></button>
     </header>}
     <main id="main-content" className={screen === "welcome" ? "welcome-main" : usesProfileLayout ? "alumni-profile" : screen === "event" ? "event-page" : "main-content"} key={screen}>{content}</main>
-    <Sheet open={sheet !== null} title={contactPreview?.title ?? (sheet === "attendees" ? "Who’s coming" : sheet === "call-link" ? "Share a call link" : sheet === "decline" ? "Decline request" : "Suggest an alternative")} onClose={() => setSheet(null)}>
-      {sheet === "attendees" ? <>
+    <Sheet open={sheet !== null} title={contactPreview?.title ?? (sheet === "demo-google" ? "Choose a demo account" : sheet === "attendees" ? "Who’s coming" : sheet === "call-link" ? "Share a call link" : sheet === "decline" ? "Decline request" : "Suggest an alternative")} onClose={() => setSheet(null)}>
+      {sheet === "demo-google" ? <>
+        <p className="field-hint">Select the sample university account to continue the walkthrough.</p>
+        <button type="button" className="verification-identity demo-account-option" onClick={() => { updateOnboarding({ type: "select-account" }); go("verify"); }}>
+          <Avatar person={{ initials: "PM", color: "sage" }} />
+          <div><strong>{sampleUniversityAccount.name}</strong><span>{sampleUniversityAccount.email}</span></div>
+          <ChevronRight size={17} aria-hidden="true" />
+        </button>
+      </> : sheet === "attendees" ? <>
         <p className="event-attendee-event">{selectedEvent.title}</p>
         <ul className="event-attendee-list" aria-label="Attendees">
           {eventAttendees.map(attendee => <li key={attendee.id ?? "you"}>
