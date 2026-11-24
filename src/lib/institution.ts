@@ -1,5 +1,6 @@
 import { alumniEvents, distinguishedAlumnus, type AlumniEvent } from "./events";
 import { recordDifferences, sampleAlumniRecord, type AlumniDetails } from "./onboarding";
+import { fundraisingReducer, sampleCampaign, type Campaign, type FundraisingAction } from "./fundraising";
 
 export type AlumniRecord = AlumniDetails & { email: string; batchFile: string; status: "ready" | "invited" };
 export type ImportRow = Omit<AlumniRecord, "status" | "batchFile"> & { issue?: string };
@@ -22,6 +23,7 @@ export type InstitutionState = {
   reviewFromSignup: boolean;
   communities: Community[];
   talks: InstitutionTalk[];
+  campaigns: Campaign[];
   registrationOverrides: Record<string, boolean>;
   activity: string[];
 };
@@ -44,6 +46,7 @@ export const initialInstitutionState: InstitutionState = {
     activeIntents: 3, activity: ["Ananya Sen was assigned as moderator"],
   }],
   talks: [],
+  campaigns: [sampleCampaign],
   registrationOverrides: {},
   activity: [],
 };
@@ -101,6 +104,7 @@ export function previewAlumniBatch(text: string, existing: readonly AlumniRecord
 }
 
 export type InstitutionAction =
+  | { type: "fundraising"; action: FundraisingAction }
   | { type: "submit-review"; details: AlumniDetails }
   | { type: "review-more-info"; message: string }
   | { type: "review-approve" | "review-sample-reply" | "invite-ready" }
@@ -139,6 +143,10 @@ function log(state: InstitutionState, message: string) {
 
 export function institutionReducer(state: InstitutionState, action: InstitutionAction): InstitutionState {
   switch (action.type) {
+    case "fundraising": {
+      const campaigns = fundraisingReducer(state.campaigns, action.action);
+      return campaigns === state.campaigns ? state : { ...state, campaigns };
+    }
     case "submit-review":
       if (state.review.status === "approved" || (state.reviewFromSignup && state.review.status !== "more-info")) return state;
       return log({ ...state, reviewFromSignup: true, review: {

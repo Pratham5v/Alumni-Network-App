@@ -2,10 +2,12 @@
 
 import { useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, Award, CalendarDays, Check, ChevronRight, Ellipsis, FileText, Inbox, Layers3, LayoutGrid, Mail, Plus, Search, ShieldCheck, Upload, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, CalendarDays, Check, ChevronRight, Ellipsis, FileText, Heart, Inbox, Layers3, LayoutGrid, Mail, Plus, Search, ShieldCheck, Upload, Users } from "lucide-react";
 import { distinguishedAlumnus, eventDateLabel } from "@/lib/events";
 import { previewAlumniBatch, publicInstitutionEvents, readyAlumni, sampleBatchCsv, sampleJoinCandidate, type AlumniRecord, type Community, type CommunityMember, type ImportRow, type InstitutionAction, type InstitutionState, type TalkDraft } from "@/lib/institution";
 import { recordDifferences, sampleAlumniRecord } from "@/lib/onboarding";
+import { campaignDraftError, isCampaignOpen, maxCampaignAmount, todayInIndia, type CampaignDraft } from "@/lib/fundraising";
+import { CampaignPresentation, CampaignProgress } from "./explore";
 
 type WorkspaceProps = {
   state: InstitutionState;
@@ -16,13 +18,14 @@ type WorkspaceProps = {
   helpfulOutcome: boolean;
   onExit: () => void;
 };
-type Page = "overview" | "queue" | "records" | "communities" | "events";
+type Page = "overview" | "queue" | "records" | "communities" | "events" | "fundraising";
 const navigation = [
   { id: "overview", title: "Overview", icon: LayoutGrid },
   { id: "queue", title: "Work queue", icon: Inbox },
   { id: "records", title: "Alumni records", icon: FileText },
   { id: "communities", title: "Communities", icon: Users },
   { id: "events", title: "Events", icon: CalendarDays },
+  { id: "fundraising", title: "Fundraising", icon: Heart },
 ] as const;
 const reviewStates = { pending: "Needs review", "more-info": "Awaiting alumnus", approved: "Approved" };
 const countLabel = (count: number, singular: string, plural = `${singular}s`) => `${count} ${count === 1 ? singular : plural}`;
@@ -383,6 +386,100 @@ function EventStages({ stage }: { stage: "draft" | "awaiting" | "accepted" | "pu
   return <ol className="inst-timeline">{stages.map((item, index) => <li key={item.id} aria-current={index === current ? "step" : undefined} className={index <= current ? "complete" : ""}><span>{index < current ? <Check size={13} /> : index + 1}</span>{item.label}</li>)}</ol>;
 }
 
+function FundraisingWorkspace({ state, update }: Pick<WorkspaceProps, "state" | "update">) {
+  const [selectedId, setSelectedId] = useState(state.campaigns[0]?.id);
+  const [mode, setMode] = useState<"manage" | "edit" | "new" | "preview">("manage");
+  const [writingUpdate, setWritingUpdate] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const campaign = state.campaigns.find(item => item.id === selectedId);
+  const today = todayInIndia();
+  function move(next: typeof mode) { setMode(next); setWritingUpdate(false); setMessage(""); setError(""); }
+
+  if (mode === "new" || (mode === "edit" && campaign)) {
+    const draft = mode === "edit" ? campaign : undefined;
+    return <>
+      <Button kind="quiet" onClick={() => move("manage")}><ArrowLeft size={16} />Fundraising</Button>
+      <Heading title={draft ? "Edit campaign" : "New campaign"} description="Set a pledge goal and explain what alumni support makes possible." />
+      <form className="inst-panel inst-block inst-form" onSubmit={event => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        const details: CampaignDraft = {
+          title: String(data.get("title")), summary: String(data.get("summary")), purpose: String(data.get("purpose")),
+          goal: Number(data.get("goal")), deadline: String(data.get("deadline")),
+        };
+        const currentDay = todayInIndia();
+        const problem = campaignDraftError(details, currentDay);
+        if (problem) { setError(problem); return; }
+        update({ type: "fundraising", action: { type: "save-draft", id: draft?.id, draft: details, today: currentDay } });
+        if (!draft) setSelectedId("campaign-" + (state.campaigns.length + 1));
+        move("manage");
+        setMessage("Campaign draft saved.");
+      }}>
+        <label>Campaign title<input name="title" required maxLength={80} defaultValue={draft?.title} placeholder="e.g. Student Research Fund" /></label>
+        <label>Short summary<input name="summary" required maxLength={140} defaultValue={draft?.summary} /></label>
+        <div className="inst-fields">
+          <label>Goal (₹)<input name="goal" required type="number" min="1" max={maxCampaignAmount} step="1" defaultValue={draft?.goal} /></label>
+          <label>Deadline<input name="deadline" required type="date" min={today} defaultValue={draft?.deadline} /></label>
+        </div>
+        <label>What your support makes possible<textarea name="purpose" required maxLength={600} defaultValue={draft?.purpose} /></label>
+        {error && <p className="inst-status warning" role="alert">{error}</p>}
+        <div className="inst-actions"><Button onClick={() => move("manage")}>Cancel</Button><Button kind="primary" type="submit">Save draft</Button></div>
+      </form>
+    </>;
+  }
+
+  if (mode === "preview" && campaign) return <>
+    <Button kind="quiet" onClick={() => move("manage")}><ArrowLeft size={16} />Fundraising</Button>
+    <Heading title="Alumni preview" description="Review the campaign as it will appear to alumni." />
+    <div className="inst-giving-preview"><CampaignPresentation campaign={campaign} preview /></div>
+  </>;
+
+  return <>
+    <Heading title="Fundraising" description="Publish campaigns and keep supporters informed." action={<Button kind="primary" onClick={() => move("new")}><Plus size={17} />New campaign</Button>} />
+    {state.campaigns.length > 1 && <nav className="inst-pledge-list" aria-label="Campaigns">{state.campaigns.map(item => <Button key={item.id} aria-pressed={item.id === selectedId} onClick={() => { setSelectedId(item.id); move("manage"); }}>{item.title}</Button>)}</nav>}
+    {message && <p className="inst-status" role="status">{message}</p>}
+    {error && !writingUpdate && <p className="inst-status warning" role="alert">{error}</p>}
+    {campaign ? <div className="inst-giving-grid">
+      <section className="inst-panel inst-block inst-giving-panel">
+        <div className="inst-between"><Chip tone={isCampaignOpen(campaign, today) ? "green" : "neutral"}>{campaign.status === "draft" ? "Draft" : isCampaignOpen(campaign, today) ? "Published" : "Pledges closed"}</Chip>
+          <Button onClick={() => move("preview")}>Preview alumni view<ArrowRight size={15} /></Button></div>
+        <h2>{campaign.title}</h2><p>{campaign.summary}</p>
+        <CampaignProgress campaign={campaign} />
+        {campaign.status === "draft" && <div className="inst-actions">
+          <Button onClick={() => move("edit")}>Edit draft</Button>
+          <Button kind="primary" onClick={() => {
+            const currentDay = todayInIndia();
+            const problem = campaignDraftError(campaign, currentDay);
+            if (problem) { setError(problem); return; }
+            update({ type: "fundraising", action: { type: "publish", id: campaign.id, today: currentDay } });
+            setError(""); setMessage("Campaign published to Explore → Fundraising.");
+          }}>Publish campaign</Button>
+        </div>}
+      </section>
+      <section className="inst-panel inst-block inst-giving-updates">
+        <div className="inst-between"><h2>Campaign updates</h2>{campaign.status === "published" && <Button onClick={() => { setWritingUpdate(!writingUpdate); setError(""); setMessage(""); }}><Plus size={15} />Add update</Button>}</div>
+        {writingUpdate && <form className="inst-form" onSubmit={event => {
+          event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          const title = String(data.get("title")).trim(), text = String(data.get("message")).trim();
+          if (!title || !text) { setError("Enter a title and an update."); return; }
+          update({ type: "fundraising", action: { type: "add-update", id: campaign.id, update: { title, message: text } } });
+          setWritingUpdate(false); setError(""); setMessage("Update published to the alumni campaign page.");
+        }}>
+          <label>Update title<input name="title" required maxLength={80} /></label>
+          <label>Update<textarea name="message" required maxLength={600} /></label>
+          {error && <p className="inst-status warning" role="alert">{error}</p>}
+          <div className="inst-actions"><Button onClick={() => { setWritingUpdate(false); setError(""); }}>Cancel</Button><Button kind="primary" type="submit">Publish update</Button></div>
+        </form>}
+        {campaign.updates.length > 0 ? <ul>{campaign.updates.map((entry, index) => <li key={index}><b>{entry.title}</b><p>{entry.message}</p></li>)}</ul> :
+          <p className="inst-hint">{campaign.status === "draft" ? "Updates become available once the campaign is published." : "Share a progress update with supporters when you have news."}</p>}
+      </section>
+    </div> : <p className="inst-status">Create your first fundraising campaign.</p>}
+    <p className="inst-hint">Totals reflect pledges recorded in this demo.</p>
+  </>;
+}
+
 export default function InstitutionAdmin(props: WorkspaceProps) {
   const [page, setPage] = useState<Page>("overview");
   const [mode, setMode] = useState<"review" | "invites">("review");
@@ -412,6 +509,7 @@ export default function InstitutionAdmin(props: WorkspaceProps) {
         {page === "records" && <AlumniRecords {...props} onInvites={() => open("queue", "invites")} />}
         {page === "communities" && <Communities key={communityId ?? "communities"} {...props} initialId={communityId} />}
         {page === "events" && <EventsWorkspace {...props} />}
+        {page === "fundraising" && <FundraisingWorkspace {...props} />}
       </main>
     </div>
   </div>;

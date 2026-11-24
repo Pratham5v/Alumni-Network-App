@@ -9,14 +9,18 @@ import { people, relevanceToIntent, type Person } from "@/lib/people";
 import { googleCalendarUrl, interviewTimeLabel } from "@/lib/calendar";
 import { aiLecture, distinguishedAlumnus, eventDateBadge, eventDateLabel, type AlumniEvent } from "@/lib/events";
 import { publicInstitutionEvents } from "@/lib/institution";
+import { isCampaignOpen, todayInIndia } from "@/lib/fundraising";
 import InstitutionAdmin from "./institution-admin";
+import { CampaignList, CampaignPresentation, ExploreCommunities, ExploreHub, JobBoard, PledgeSupport } from "./explore";
 import "./institution-admin.css";
 
-type Screen = "welcome" | "walkthroughs" | "onboard" | "verify" | "admin" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "profile-edit" | "profile-settings" | "profile-preview" | "received-request" | "received-conversation" | "distinguished-profile" | "events" | "event";
-const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "profile-edit", "profile-settings", "profile-preview", "received-request", "received-conversation", "distinguished-profile", "events", "event"];
+type Screen = "welcome" | "walkthroughs" | "onboard" | "verify" | "admin" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "profile-edit" | "profile-settings" | "profile-preview" | "received-request" | "received-conversation" | "distinguished-profile" | "explore" | "events" | "event" | "jobs" | "communities" | "campaigns" | "campaign";
+const exploreScreens: Screen[] = ["explore", "events", "event", "jobs", "communities", "campaigns", "campaign"];
+const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "profile-edit", "profile-settings", "profile-preview", "received-request", "received-conversation", "distinguished-profile", ...exploreScreens];
 type IntentForm = Omit<Intent, "status">;
 type ContactPreview = { title: string; value: string };
 type EventPage = { id: string; from: "events" | "distinguished-profile" };
+type NavigationTarget = EventPage | { campaignId: string };
 const defaultEventPage: EventPage = { id: aiLecture.id, from: "events" };
 const alumniBatches = [...new Set([...people, distinguishedAlumnus].map(alumnus => alumnus.batch))].sort((a, b) => Number(b) - Number(a));
 const riya = { id: "riya", initials: "RS", color: "sage" };
@@ -133,6 +137,7 @@ export default function AlumniApp() {
   const [intentForm, setIntentForm] = useState<IntentForm>(sampleIntent);
   const [personId, setPersonId] = useState("aarav");
   const [eventPage, setEventPage] = useState(defaultEventPage);
+  const [campaignId, setCampaignId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("All locations");
   const [expertise, setExpertise] = useState("All expertise");
@@ -158,6 +163,9 @@ export default function AlumniApp() {
   const alumniEvents = publicInstitutionEvents(state.institution);
   const featuredEvent = alumniEvents.find(event => event.id === aiLecture.id) ?? aiLecture;
   const selectedEvent = alumniEvents.find(event => event.id === eventPage.id) ?? featuredEvent;
+  const publishedCampaigns = state.institution.campaigns.filter(campaign => campaign.status === "published").reverse();
+  const featuredCampaign = screen === "explore" ? publishedCampaigns.find(campaign => isCampaignOpen(campaign, todayInIndia())) : undefined;
+  const selectedCampaign = publishedCampaigns.find(campaign => campaign.id === campaignId);
   const inside = appScreens.includes(screen);
   const contactPreview = typeof sheet === "object" ? sheet : null;
   const intent = state.intent;
@@ -175,12 +183,15 @@ export default function AlumniApp() {
     : selectedEvent.attendees;
   const replySent = state.messages.some(message => message.from === "you");
 
-  const go = useCallback((next: Screen, message?: string, event?: EventPage, match = false) => {
+  const go = useCallback((next: Screen, message?: string, target?: NavigationTarget, match = false) => {
     setSheet(null);
     setConfirmation(message ? { screen: next, message } : null);
+    const event = target && "from" in target ? target : undefined;
+    const campaign = target && "campaignId" in target ? target.campaignId : undefined;
     if (event) setEventPage(event);
+    if (campaign) setCampaignId(campaign);
     setMatchToIntent(match);
-    window.history.pushState({ screen: next, event, match }, "", event ? `#event/${event.id}` : `#${next}`);
+    window.history.pushState({ screen: next, event, campaign, match }, "", event ? `#event/${event.id}` : campaign ? `#campaign/${campaign}` : `#${next}`);
     setScreen(next);
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
@@ -190,6 +201,7 @@ export default function AlumniApp() {
       setSheet(null);
       setConfirmation(null);
       if (event.state?.screen === "event") setEventPage(event.state.event ?? defaultEventPage);
+      if (event.state?.screen === "campaign") setCampaignId(event.state.campaign ?? null);
       setMatchToIntent(event.state?.match === true);
       setScreen(event.state?.screen || "welcome");
       window.scrollTo({ top: 0, behavior: "instant" });
@@ -615,7 +627,27 @@ export default function AlumniApp() {
       break;
     }
 
-    case "events": content = <>{title("Events", "Talks, panels, and meetups in your alumni network.")}
+    case "explore": content = <>
+      {title("Explore", "Find ways to connect, contribute, and get involved.", "BITS alumni network")}
+      <ExploreHub featured={featuredCampaign} open={destination => go(destination)} openCampaign={id => go("campaign", undefined, { campaignId: id })} />
+    </>; break;
+
+    case "jobs": content = <>{back("explore", "Explore")}{title("Job board", "Browse sample roles shared by alumni.")}<JobBoard /></>; break;
+
+    case "communities": content = <>{back("explore", "Explore")}{title("Communities", "Discover groups across your alumni network.")}<ExploreCommunities communities={state.institution.communities} /></>; break;
+
+    case "campaigns": content = <>
+      {back("explore", "Explore")}{title("Fundraising", "Support causes backed by your university.")}
+      <CampaignList campaigns={publishedCampaigns} open={id => go("campaign", undefined, { campaignId: id })} />
+    </>; break;
+
+    case "campaign": content = selectedCampaign ? <>
+      <header className="giving-back-header">{back("campaigns", "Fundraising")}<button className="wordmark" type="button" aria-label="Alumni home" onClick={() => go("home")}><Layers3 size={21} aria-hidden="true" />alumni<span className="wordmark-period">.</span></button></header>
+      <CampaignPresentation campaign={selectedCampaign} headingRef={headingRef} />
+      <PledgeSupport key={selectedCampaign.id} campaign={selectedCampaign} save={(amount, today) => dispatch({ type: "institution", action: { type: "fundraising", action: { type: "pledge", id: selectedCampaign.id, amount, today } } })} />
+    </> : <>{back("campaigns", "Fundraising")}{title("Campaign unavailable", "Return to fundraising to see published campaigns.")}</>; break;
+
+    case "events": content = <>{back("explore", "Explore")}{title("Events", "Talks, panels, and meetups in your alumni network.")}
       <button className="event-featured" onClick={() => openEvent(featuredEvent, "events")}>
         <span className="featured-host">
           <Avatar person={distinguishedAlumnus} />
@@ -968,7 +1000,7 @@ export default function AlumniApp() {
 
   const isAlumniProfile = screen === "profile" || screen === "distinguished-profile";
   const usesProfileLayout = isAlumniProfile || screen === "my-profile" || screen === "profile-preview";
-  const selectedTab = screen === "events" || screen === "event" ? "events" : ["create", "intent", "intents"].includes(screen) ? "intents" : screen === "people" || isAlumniProfile ? "people" : ["compose", "requests", "request", "conversation", "outcome", "success", "received-request", "received-conversation"].includes(screen) ? "requests" : "home";
+  const selectedTab = exploreScreens.includes(screen) ? "explore" : ["create", "intent", "intents"].includes(screen) ? "intents" : screen === "people" || isAlumniProfile ? "people" : ["compose", "requests", "request", "conversation", "outcome", "success", "received-request", "received-conversation"].includes(screen) ? "requests" : "home";
   return <div className={`app-shell${inside ? " workspace-shell" : ""}`} data-screen={screen}>
     {inside && <header className="app-header">
       <button className="wordmark" onClick={() => go("home")} aria-label="Alumni home"><Layers3 size={23} strokeWidth={1.7} aria-hidden="true" />alumni<span className="wordmark-period">.</span></button>
@@ -1001,7 +1033,7 @@ export default function AlumniApp() {
         <div className="action-footer"><Button type="submit" disabled={!(sheet === "decline" ? declineMessage : alternativeMessage).trim()}>{sheet === "decline" ? "Send decline" : "Send recommendation"}</Button></div>
       </form>}
     </Sheet>
-    {inside && <nav className="bottom-nav" aria-label="Main navigation">{([{ name: "Home", id: "home", Icon: Home }, { name: "People", id: "people", Icon: Users }, { name: "Intents", id: "intents", Icon: Layers3 }, { name: "Requests", id: "requests", Icon: MessageCircle }, { name: "Events", id: "events", Icon: CalendarDays }] as const).map(({ name, id, Icon }) => <button key={id} aria-current={selectedTab === id ? "page" : undefined} onClick={() => go(id)} className={selectedTab === id ? "active" : ""}><span className="nav-icon"><Icon size={22} strokeWidth={selectedTab === id ? 2 : 1.65} />{id === "requests" && unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span><span>{name}</span></button>)}</nav>}
+    {inside && <nav className="bottom-nav" aria-label="Main navigation">{([{ name: "Home", id: "home", Icon: Home }, { name: "People", id: "people", Icon: Users }, { name: "Intents", id: "intents", Icon: Layers3 }, { name: "Requests", id: "requests", Icon: MessageCircle }, { name: "Explore", id: "explore", Icon: Compass }] as const).map(({ name, id, Icon }) => <button key={id} aria-current={selectedTab === id ? "page" : undefined} onClick={() => go(id)} className={selectedTab === id ? "active" : ""}><span className="nav-icon"><Icon size={22} strokeWidth={selectedTab === id ? 2 : 1.65} />{id === "requests" && unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span><span>{name}</span></button>)}</nav>}
     <div className="sr-only" role="status" aria-atomic="true">{confirmationMessage}</div>
   </div>;
 }
