@@ -169,9 +169,9 @@ export default function AlumniApp() {
   const { notifications } = state.profilePreferences;
   const unreadCount = (notifications.replies && request && request.status !== "completed" ? 1 : 0) + (notifications.requests && incoming?.unread ? 1 : 0);
   const firstName = state.profile.name.trim().split(/\s+/)[0] || "Prathmesh";
-  const self = { initials: state.profile.name.split(/\s+/).map(name => name[0]).slice(0, 2).join(""), color: "sage" };
+  const self = { id: "prathmesh", initials: state.profile.name.split(/\s+/).map(name => name[0]).slice(0, 2).join(""), color: "sage" };
   const eventAttendees = state.registeredEventIds.includes(selectedEvent.id)
-    ? [{ ...self, name: state.profile.name, role: state.profile.role, batch: state.profile.batch, id: undefined }, ...selectedEvent.attendees]
+    ? [{ ...self, name: state.profile.name, role: state.profile.role, batch: state.profile.batch }, ...selectedEvent.attendees]
     : selectedEvent.attendees;
   const replySent = state.messages.some(message => message.from === "you");
 
@@ -674,7 +674,7 @@ export default function AlumniApp() {
             <div className="event-attendance-summary">
               <div className="event-attendance-preview">
                 <span className="event-attendee-avatars" aria-hidden="true">{eventAttendees.slice(0, 4).map(attendee =>
-                  <Avatar key={attendee.id ?? "you"} person={attendee} size="small" />
+                  <Avatar key={attendee.id} person={attendee} size="small" />
                 )}</span>
                 <span className="event-attendee-count" role="status">{eventAttendees.length} going</span>
               </div>
@@ -986,9 +986,9 @@ export default function AlumniApp() {
       </> : sheet === "attendees" ? <>
         <p className="event-attendee-event">{selectedEvent.title}</p>
         <ul className="event-attendee-list" aria-label="Attendees">
-          {eventAttendees.map(attendee => <li key={attendee.id ?? "you"}>
+          {eventAttendees.map(attendee => <li key={attendee.id}>
             <Avatar person={attendee} size="small" />
-            <div><strong>{attendee.name}{!attendee.id && " (you)"}</strong><span>{attendee.role} · Class of {attendee.batch}</span></div>
+            <div><strong>{attendee.name}{attendee.id === self.id && " (you)"}</strong><span>{attendee.role} · Class of {attendee.batch}</span></div>
           </li>)}
         </ul>
       </> : contactPreview ? <p className="alumni-contact-value">{contactPreview.value}</p> : sheet === "call-link" ? <form onSubmit={e => { e.preventDefault(); if (!isValidCallLink(callLink.trim())) return; dispatch({ type: "share-call-link", url: callLink, target: "sent" }); setSheet(null); setConfirmation({ screen: "conversation", message: "Call link shared in the conversation." }); }}>

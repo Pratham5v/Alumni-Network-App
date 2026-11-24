@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Prathmesh Mehrotra">
+  <title>Prathmesh Mehrotra</title>
+  <defs>
+    <clipPath id="portrait-crop"><circle cx="64" cy="64" r="59"/></clipPath>
+  </defs>
+  <circle cx="64" cy="64" r="59" fill="#c8dfd7"/>
+  <g clip-path="url(#portrait-crop)">
+    <g fill="none" stroke="#242320" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke-width="1.55">
+        <path d="M42 59 C36 55 34 46 37 38 C34 33 37 27 44 25 C44 19 51 16 58 19 C64 13 74 15 80 20 C90 20 97 28 96 36 C100 43 97 53 90 59"/>
+        <path d="M42 59 C44 53 45 47 45 43 C53 44 62 41 67 36 C73 39 82 40 89 39 C91 45 92 52 90 59"/>
+        <path d="M43 60 C36 57 36 68 43 71 C46 80 52 87 59 90 C64 92 70 91 75 88 C82 84 87 78 89 71 C96 70 97 59 90 60"/>
+        <path d="M54 88 L53 97 M76 88 L78 97 M54 96 Q65 110 78 96"/>
+        <path d="M53 97 C42 103 30 102 20 110 C16 114 12 119 10 124 M78 97 C91 103 103 103 112 112 L121 123 M49 99 Q65 119 82 99"/>
+      </g>
+      <g stroke-width="1.16">
+        <path d="M42 34 Q48 27 57 28 Q67 28 75 24 M51 37 Q62 37 70 30 M80 28 Q87 29 91 34"/>
+        <path d="M48 53 Q53 51 58 53 M73 52 Q79 50 84 53 M65 59 C65 65 62 68 65 70 L68 69"/>
+        <path d="M56 76 Q64 82 74 75 M59 80 Q64 84 70 81 M41 64 L43 67 M91 64 L89 67"/>
+      </g>
+    </g>
+    <g fill="#242320">
+      <ellipse cx="54" cy="59" rx="1.55" ry="1.8"/>
+      <ellipse cx="78" cy="58" rx="1.55" ry="1.8"/>
+    </g>
+  </g>
+</svg>
