@@ -326,10 +326,21 @@ input::placeholder, textarea::placeholder { color: #687a75; }
 .distinguished-card > svg { color: var(--amber); }
 .distinguished-card.person-identity:hover { border-color: #c5a979; }
 .distinguished-card .discovery-award { color: var(--amber); font-size: 12px; }
+.app-shell[data-screen="people"] .page-heading { margin-bottom: 16px; }
+.discovery-results-heading { margin-bottom: 7px; }
 .discovery-results { border-top: 1px solid var(--line); }
-.discovery-person { margin: 0; padding: 10px 8px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; background: transparent; }
-.discovery-person.person-match { border: 1px solid #cce2d5; border-radius: var(--card-radius); padding: 12px; background: var(--pale); }
-.discovery-person .person-help { margin: 6px 0 3px; font-size: 13px; }
+.discovery-person { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: start; gap: 10px; width: 100%; padding: 12px 0; text-align: left; border-bottom: 1px solid var(--line); background: transparent; }
+.discovery-person:hover { background: var(--soft); }
+.discovery-person .avatar { width: 46px; height: 46px; }
+.discovery-person > svg { margin-top: 7px; color: var(--teal); }
+.discovery-person-content { min-width: 0; overflow-wrap: anywhere; }
+.discovery-person-content > strong { display: block; font-size: 16px; font-weight: 750; line-height: 1.35; }
+.discovery-person-meta, .discovery-person-help { display: block; font-size: 13px; line-height: 1.45; }
+.discovery-person-meta { margin-top: 2px; color: var(--muted); }
+.discovery-person-help { margin: 5px 0; }
+.discovery-commitment { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 999px; background: var(--pale); color: var(--teal-dark); font-size: 11px; font-weight: 650; }
+.discovery-person.person-match { border: 1px solid #cce2d5; border-radius: var(--card-radius); padding: 12px; background: #f3faf6; }
+.discovery-person .match-tag { margin-bottom: 5px; }
 .recognition-card { padding: 14px; border: 1px solid #e9dbbf; border-radius: var(--card-radius); background: #fcf8ef; }
 .recognition-badge {
   display: inline-flex;

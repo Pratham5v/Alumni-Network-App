@@ -326,8 +326,7 @@ export default function AlumniApp() {
     </button>;
   }
   function personCard(p: Person, compact = false, matched = false) {
-    const inDirectory = screen === "people";
-    return <article className={`person-card${matched ? " person-match" : ""}${compact ? " person-compact" : ""}${inDirectory ? " discovery-person" : ""}`} key={p.id}>
+    return <article className={`person-card${matched ? " person-match" : ""}${compact ? " person-compact" : ""}`} key={p.id}>
       {matched && <div className="match-tag"><Sparkles size={14} aria-hidden="true" />Closest match for your intent</div>}
       <button className="person-identity" onClick={() => openPerson(p)} aria-label={`View ${p.name}'s profile`}>
         <Avatar person={p} /><span><strong>{p.name}</strong><span>{p.role} · {p.location}</span></span><ChevronRight size={18} className="muted" aria-hidden="true" />
@@ -340,10 +339,23 @@ export default function AlumniApp() {
             <span aria-hidden="true">·</span>
             <span>{p.commitment}</span>
           </div>
-          {!inDirectory && (intent || request) && <Button variant="secondary" onClick={() => compose(p)}>{request ? "View request" : "Request help"}</Button>}
+          {(intent || request) && <Button variant="secondary" onClick={() => compose(p)}>{request ? "View request" : "Request help"}</Button>}
         </div>
       </>}
     </article>;
+  }
+  function discoveryPerson(person: Person, matched: boolean) {
+    return <button key={person.id} type="button" className={`discovery-person${matched ? " person-match" : ""}`} onClick={() => openPerson(person)} aria-label={`View ${person.name}'s profile`}>
+      <Avatar person={person} />
+      <span className="discovery-person-content">
+        {matched && <span className="match-tag"><Sparkles size={14} aria-hidden="true" />Closest match for your intent</span>}
+        <strong>{person.name}</strong>
+        <span className="discovery-person-meta">{person.role} · {person.location}</span>
+        <span className="discovery-person-help">{person.help}</span>
+        <span className="discovery-commitment"><Clock3 size={13} aria-hidden="true" />{person.commitment}</span>
+      </span>
+      <ChevronRight size={18} aria-hidden="true" />
+    </button>;
   }
   function intentCard() {
     if (!intent) return null;
@@ -545,7 +557,7 @@ export default function AlumniApp() {
       {request && <div className="action-footer"><Button onClick={() => go("request")}>View request</Button></div>}
     </> : <Empty icon={<Layers3 size={27} />} title="Create your first intent" action={<Button onClick={() => go("create")}>Create an intent</Button>}>Tell your community what would help right now.</Empty>; break;
 
-    case "people": content = <>{title("Discover alumni", "Find someone with the experience you need.")}
+    case "people": content = <>{title("Discover alumni")}
       {activeIntent && <label className="discovery-intent">
         <span><Layers3 size={15} aria-hidden="true" />Match to intent</span>
         <Select value={matchedIntent ? "active" : "all"} onChange={e => changeIntentMatch(e.target.value === "active")}>
@@ -578,13 +590,14 @@ export default function AlumniApp() {
         <button className="distinguished-card person-identity" onClick={() => go("distinguished-profile")} aria-label={`View ${distinguishedAlumnus.name}'s profile`}>
           <Avatar person={distinguishedAlumnus} />
           <span><strong>{distinguishedAlumnus.name}</strong><span>{distinguishedAlumnus.role} · {distinguishedAlumnus.location}</span><span className="discovery-award">{distinguishedAlumnus.award.name} · {distinguishedAlumnus.award.year}</span></span>
-          <Award size={19} aria-hidden="true" /><ChevronRight size={17} aria-hidden="true" />
+          <ChevronRight size={17} aria-hidden="true" />
         </button>
       </section>}
       {filteredPeople.length > 0 && <>
-        <div className="section-heading"><h2>{matchedIntent ? "Recommended alumni" : hasDiscoveryFilters ? "Search results" : "Open to helping"}</h2><span className="small muted" role="status">{filteredPeople.length} alumni</span></div>
-        <div className="discovery-results">{discoveryResults.map(({ person, relevance }, index) => personCard(person, false, index === 0 && relevance > 0))}</div>
+        <div className="section-heading discovery-results-heading"><h2>{matchedIntent ? "Recommended alumni" : hasDiscoveryFilters ? "Search results" : "Open to helping"}</h2></div>
+        <div className="discovery-results">{discoveryResults.map(({ person, relevance }, index) => discoveryPerson(person, index === 0 && relevance > 0))}</div>
       </>}
+      <span className="sr-only" role="status">{filteredPeople.length + Number(showDistinguished)} alumni found</span>
       {!filteredPeople.length && !showDistinguished && <Empty icon={<Search size={27} />} title="No alumni found">Try another name or broaden your filters.</Empty>}
     </>; break;
 
