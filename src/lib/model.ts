@@ -1,5 +1,5 @@
 import { tomorrowInterview, type InterviewMeeting } from "./calendar";
-import { alumniEvents } from "./events";
+import { initialInstitutionState, institutionReducer, publicInstitutionEvents, type InstitutionAction, type InstitutionState } from "./institution";
 
 export type Profile = { name: string; batch: string; role: string; location: string };
 export type Commitment = "20-minute call" | "30-minute call" | "Chat";
@@ -60,6 +60,7 @@ export type DemoState = {
   callLink: string | null;
   incoming: IncomingRequest | null;
   registeredEventIds: string[];
+  institution: InstitutionState;
 };
 export const sampleProfile: Profile = { name: "Prathmesh Mehrotra", batch: "2026", role: "Software Engineer", location: "Gurgaon" };
 export const sampleProfileLinks = {
@@ -101,7 +102,7 @@ export const sampleIntent: Omit<Intent, "status"> = {
   commitment: "20-minute call",
   expires: "14",
 };
-export const initialState: DemoState = { profile: sampleProfile, profileDetails: sampleProfileDetails, profilePreferences: sampleProfilePreferences, intent: null, request: null, messages: [], conversationConfirmed: false, meeting: null, callLink: null, incoming: null, registeredEventIds: [] };
+export const initialState: DemoState = { profile: sampleProfile, profileDetails: sampleProfileDetails, profilePreferences: sampleProfilePreferences, intent: null, request: null, messages: [], conversationConfirmed: false, meeting: null, callLink: null, incoming: null, registeredEventIds: [], institution: initialInstitutionState };
 export function isValidCallLink(value: string): boolean {
   try { return ["https:", "http:"].includes(new URL(value).protocol); } catch { return false; }
 }
@@ -122,6 +123,7 @@ export type Action =
   | { type: "receive-incoming-call-link" }
   | { type: "outcome"; outcome: Outcome }
   | { type: "register-event"; eventId: string }
+  | { type: "institution"; action: InstitutionAction }
   | { type: "new-journey" }
   | { type: "reset" };
 
@@ -180,9 +182,10 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
         intent: state.intent ? { ...state.intent, status: action.outcome.resolved ? "resolved" : "active" } : null,
       };
     case "register-event":
-      if (state.registeredEventIds.includes(action.eventId) || !alumniEvents.some(event => event.id === action.eventId && event.registrationOpen)) return state;
+      if (state.registeredEventIds.includes(action.eventId) || !publicInstitutionEvents(state.institution).some(event => event.id === action.eventId && event.registrationOpen)) return state;
       return { ...state, registeredEventIds: [...state.registeredEventIds, action.eventId] };
-    case "new-journey": return { ...initialState, profile: state.profile, profileDetails: state.profileDetails, profilePreferences: state.profilePreferences, incoming: state.incoming, registeredEventIds: state.registeredEventIds };
+    case "institution": return { ...state, institution: institutionReducer(state.institution, action.action) };
+    case "new-journey": return { ...initialState, profile: state.profile, profileDetails: state.profileDetails, profilePreferences: state.profilePreferences, incoming: state.incoming, registeredEventIds: state.registeredEventIds, institution: state.institution };
     case "reset": return initialState;
   }
 }

@@ -7,9 +7,12 @@ import { demoReducer, demoReply, incomingScenario, initialState, isValidCallLink
 import { initialOnboardingState, onboardingReducer, recordDifferences, sampleUniversityAccount } from "@/lib/onboarding";
 import { people, relevanceToIntent, type Person } from "@/lib/people";
 import { googleCalendarUrl, interviewTimeLabel } from "@/lib/calendar";
-import { aiLecture, alumniEvents, distinguishedAlumnus, eventDateBadge, eventDateLabel, type AlumniEvent } from "@/lib/events";
+import { aiLecture, distinguishedAlumnus, eventDateBadge, eventDateLabel, type AlumniEvent } from "@/lib/events";
+import { publicInstitutionEvents } from "@/lib/institution";
+import InstitutionAdmin from "./institution-admin";
+import "./institution-admin.css";
 
-type Screen = "welcome" | "walkthroughs" | "onboard" | "verify" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "profile-edit" | "profile-settings" | "profile-preview" | "received-request" | "received-conversation" | "distinguished-profile" | "events" | "event";
+type Screen = "welcome" | "walkthroughs" | "onboard" | "verify" | "admin" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "profile-edit" | "profile-settings" | "profile-preview" | "received-request" | "received-conversation" | "distinguished-profile" | "events" | "event";
 const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "profile-edit", "profile-settings", "profile-preview", "received-request", "received-conversation", "distinguished-profile", "events", "event"];
 type IntentForm = Omit<Intent, "status">;
 type ContactPreview = { title: string; value: string };
@@ -152,7 +155,9 @@ export default function AlumniApp() {
   const lastThread = useRef<{ screen: Screen; length: number } | null>(null);
   const person = people.find(p => p.id === personId) || people[0];
   const recipient = people.find(p => p.id === state.request?.personId) || person;
-  const selectedEvent = alumniEvents.find(event => event.id === eventPage.id) ?? aiLecture;
+  const alumniEvents = publicInstitutionEvents(state.institution);
+  const featuredEvent = alumniEvents.find(event => event.id === aiLecture.id) ?? aiLecture;
+  const selectedEvent = alumniEvents.find(event => event.id === eventPage.id) ?? featuredEvent;
   const inside = appScreens.includes(screen);
   const contactPreview = typeof sheet === "object" ? sheet : null;
   const intent = state.intent;
@@ -258,6 +263,21 @@ export default function AlumniApp() {
   }
   function openEvent(event: AlumniEvent, from: EventPage["from"]) {
     go("event", undefined, { id: event.id, from });
+  }
+  function registrationLabel(event: AlumniEvent) {
+    if (state.registeredEventIds.includes(event.id)) return "Registered";
+    if (event.registrationOpen) return "Registration open";
+    return state.institution.registrationOverrides[event.id] === false ? "Registration closed" : "Registration opens soon";
+  }
+  function openSignup() {
+    const { review, reviewFromSignup } = state.institution;
+    if (reviewFromSignup || review.status !== "pending") {
+      updateOnboarding({ type: "open-review", details: review.details });
+      go("verify");
+    } else {
+      updateOnboarding({ type: "reset" });
+      go("onboard");
+    }
   }
   function compose(p: Person) {
     if (request) { go("request"); return; }
@@ -369,15 +389,16 @@ export default function AlumniApp() {
             <span><strong>Core Application</strong><small>Explore Intents, people and events</small></span>
             <ArrowRight size={17} aria-hidden="true" />
           </button>
-          <button type="button" className="walkthrough-choice" onClick={() => { updateOnboarding({ type: "reset" }); go("onboard"); }}>
+          <button type="button" className="walkthrough-choice" onClick={openSignup}>
             <span className="walkthrough-icon"><ShieldCheck size={20} aria-hidden="true" /></span>
             <span><strong>Signup &amp; verification</strong><small>Set up your alumni profile and verify your affiliation.</small></span>
             <ArrowRight size={17} aria-hidden="true" />
           </button>
           <hr className="walkthrough-divider" />
-          <button type="button" className="walkthrough-choice walkthrough-unavailable" disabled>
+          <button type="button" className="walkthrough-choice" onClick={() => go("admin")}>
             <span className="walkthrough-icon"><Building2 size={20} aria-hidden="true" /></span>
-            <span className="walkthrough-admin-label"><strong>Institution Admin</strong><small>Coming later</small></span>
+            <span><strong>Institution Admin</strong><small>Manage alumni records, communities, and events.</small></span>
+            <ArrowRight size={17} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -412,9 +433,14 @@ export default function AlumniApp() {
         break;
       }
       const manual = method === "manual";
-      const matched = result === "matched";
-      const pendingReview = result === "review-requested";
+      const review = state.institution.review;
+      const hasReview = result === "review-requested";
+      const approved = hasReview && review.status === "approved";
+      const moreInfo = hasReview && review.status === "more-info";
+      const matched = result === "matched" || approved;
+      const pendingReview = hasReview && review.status === "pending";
       const needsReview = result === "needs-review";
+      const displayDetails = hasReview ? review.details : details;
       content = <>{entryHeader("onboard", "University account")}
         <div className="entry-layout">
           {setupHeading(2, "One community. Built on trust.", manual ? "Enter your alumni details so they can be reviewed." : "Confirm your academic details so we can check your alumni record.")}
@@ -428,29 +454,38 @@ export default function AlumniApp() {
             <form className="form-card alumni-details-form" onSubmit={event => {
               event.preventDefault();
               if (matched) {
-                dispatch({ type: "profile", profile: { ...state.profile, name: details.name.trim(), batch: details.batch } });
+                dispatch({ type: "profile", profile: { ...state.profile, name: displayDetails.name.trim(), batch: displayDetails.batch } });
                 go("home");
                 return;
               }
               const submitter = (event.nativeEvent as SubmitEvent).submitter;
-              updateOnboarding({ type: manual || (submitter instanceof HTMLButtonElement && submitter.value === "review") ? "request-review" : "check" });
+              if (!manual && !(submitter instanceof HTMLButtonElement && submitter.value === "review")) {
+                updateOnboarding({ type: "check" });
+                return;
+              }
+              if (onboardingReducer(onboarding, { type: "request-review" }).result === "review-requested") {
+                dispatch({ type: "institution", action: { type: "submit-review", details } });
+                updateOnboarding({ type: "request-review" });
+              }
             }}>
-              <fieldset disabled={pendingReview}>
+              <fieldset disabled={hasReview}>
                 <legend>Alumni details</legend>
-                <Field label="Full name"><input required autoComplete="name" maxLength={60} value={details.name} onChange={e => updateOnboarding({ type: "edit", field: "name", value: e.target.value })} /></Field>
+                <Field label="Full name"><input required autoComplete="name" maxLength={60} value={displayDetails.name} onChange={e => updateOnboarding({ type: "edit", field: "name", value: e.target.value })} /></Field>
                 <div className="form-row">
-                  <Field label="Graduation year"><input required inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder="2026" value={details.batch} onChange={e => updateOnboarding({ type: "edit", field: "batch", value: e.target.value })} /></Field>
-                  <Field label="Degree"><input required maxLength={45} placeholder="B.E." value={details.degree} onChange={e => updateOnboarding({ type: "edit", field: "degree", value: e.target.value })} /></Field>
+                  <Field label="Graduation year"><input required inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder="2026" value={displayDetails.batch} onChange={e => updateOnboarding({ type: "edit", field: "batch", value: e.target.value })} /></Field>
+                  <Field label="Degree"><input required maxLength={45} placeholder="B.E." value={displayDetails.degree} onChange={e => updateOnboarding({ type: "edit", field: "degree", value: e.target.value })} /></Field>
                 </div>
-                <Field label="Branch"><input required maxLength={75} placeholder="Computer Science" value={details.branch} onChange={e => updateOnboarding({ type: "edit", field: "branch", value: e.target.value })} /></Field>
+                <Field label="Branch"><input required maxLength={75} placeholder="Computer Science" value={displayDetails.branch} onChange={e => updateOnboarding({ type: "edit", field: "branch", value: e.target.value })} /></Field>
               </fieldset>
               <div className="verification-status" role="status" aria-atomic="true">
-                {matched && <Confirmation message="Record matched. Alumni status verified for this walkthrough." />}
+                {matched && <Confirmation message={approved ? "The alumni relations team approved your record." : "Record matched. Alumni status verified for this walkthrough."} />}
                 {needsReview && <div className="notice soft"><Info size={18} aria-hidden="true" /><div><strong>Details need review</strong><p>Check your {recordDifferences(details).join(", ")} or request manual review.</p></div></div>}
-                {pendingReview && <div className="notice soft"><Clock3 size={18} aria-hidden="true" /><div><strong>Review requested for this walkthrough</strong><p>Your details are pending manual verification in the demo.</p></div></div>}
+                {pendingReview && <div className="notice soft"><Clock3 size={18} aria-hidden="true" /><div><strong>Review requested for this walkthrough</strong><p>Your request is awaiting review by the BITS alumni relations team.</p></div></div>}
+                {moreInfo && <div className="notice soft"><Info size={18} aria-hidden="true" /><div><strong>More information requested</strong><p>{review.message}</p></div></div>}
               </div>
               <div className="action-footer verification-actions">
-                {pendingReview ? <Button type="button" variant="secondary" onClick={() => go("walkthroughs")}>Back to walkthroughs</Button> :
+                {moreInfo ? <Button type="button" onClick={() => updateOnboarding({ type: "resume-review" })}>Update alumni details</Button> :
+                  pendingReview ? <Button type="button" variant="secondary" onClick={() => go("walkthroughs")}>Back to walkthroughs</Button> :
                   <Button type="submit" disabled={!details.name.trim() || !details.degree.trim() || !details.branch.trim()}>
                     {matched ? <>Enter alumni app<ArrowRight size={18} aria-hidden="true" /></> :
                       manual ? "Request manual review" : <>Check alumni record<ShieldCheck size={18} aria-hidden="true" /></>}
@@ -581,7 +616,7 @@ export default function AlumniApp() {
     }
 
     case "events": content = <>{title("Events", "Talks, panels, and meetups in your alumni network.")}
-      <button className="event-featured" onClick={() => openEvent(aiLecture, "events")}>
+      <button className="event-featured" onClick={() => openEvent(featuredEvent, "events")}>
         <span className="featured-host">
           <Avatar person={distinguishedAlumnus} />
           <span><strong>{aiLecture.host}</strong><small><Award size={14} aria-hidden="true" />Distinguished alum</small></span>
@@ -590,7 +625,7 @@ export default function AlumniApp() {
         <strong className="featured-event-title">{aiLecture.title}</strong>
         <span className="event-card-date"><CalendarDays size={15} aria-hidden="true" /><span><time dateTime={aiLecture.date}>{eventDateLabel(aiLecture.date, "short")}</time> · {aiLecture.time}</span></span>
         <span className="featured-event-action">
-          <span className="event-status">{state.registeredEventIds.includes(aiLecture.id) ? "Registered" : "Registration open"}</span>
+          <span className="event-status">{registrationLabel(featuredEvent)}</span>
           <span>View details<ArrowRight size={17} aria-hidden="true" /></span>
         </span>
       </button>
@@ -604,7 +639,7 @@ export default function AlumniApp() {
               <span className="event-card-copy">
                 <span className="event-category">{event.category} · {event.format}</span>
                 <strong>{event.title}</strong>
-                <span className="event-category"><time dateTime={event.date}>{eventDateLabel(event.date, "short")}</time> · Registration opens soon</span>
+                <span className="event-category"><time dateTime={event.date}>{eventDateLabel(event.date, "short")}</time> · {registrationLabel(event)}</span>
               </span>
               <ChevronRight size={16} aria-hidden="true" />
             </button>;
@@ -615,7 +650,7 @@ export default function AlumniApp() {
 
     case "event": {
       const registered = state.registeredEventIds.includes(selectedEvent.id);
-      const hasDistinguishedHost = selectedEvent.id === aiLecture.id;
+      const hasDistinguishedHost = selectedEvent.host === distinguishedAlumnus.name;
       content = <>
         <header className="alumni-profile-header">{back(eventPage.from, eventPage.from === "events" ? "Events" : "Alumni profile")}<span>Event details</span></header>
         <div className="event-detail-content">
@@ -653,7 +688,7 @@ export default function AlumniApp() {
           <Button className="full-width" disabled={registered || !selectedEvent.registrationOpen} onClick={() => {
             dispatch({ type: "register-event", eventId: selectedEvent.id });
             setConfirmation({ screen: "event", message: "You’re registered for this lecture." });
-          }}>{registered ? "Registered" : selectedEvent.registrationOpen ? <>Register<ArrowRight size={17} aria-hidden="true" /></> : "Registration opens soon"}</Button>
+          }}>{registered ? "Registered" : selectedEvent.registrationOpen ? <>Register<ArrowRight size={17} aria-hidden="true" /></> : registrationLabel(selectedEvent)}</Button>
         </footer>
       </>;
       break;
@@ -920,6 +955,16 @@ export default function AlumniApp() {
       }} />
     </>; break;
   }
+
+  if (screen === "admin") return <InstitutionAdmin
+    state={state.institution}
+    update={action => dispatch({ type: "institution", action })}
+    registeredIds={state.registeredEventIds}
+    registrant={state.profile.name}
+    activeIntent={Boolean(activeIntent)}
+    helpfulOutcome={state.request?.outcome?.helpful === "Yes"}
+    onExit={() => go("walkthroughs")}
+  />;
 
   const isAlumniProfile = screen === "profile" || screen === "distinguished-profile";
   const usesProfileLayout = isAlumniProfile || screen === "my-profile" || screen === "profile-preview";

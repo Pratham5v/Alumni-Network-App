@@ -1,6 +1,4 @@
-import { sampleProfile } from "./model";
-
-type AlumniDetails = { name: string; batch: string; degree: string; branch: string };
+export type AlumniDetails = { name: string; batch: string; degree: string; branch: string };
 type VerificationResult = "unchecked" | "matched" | "needs-review" | "review-requested";
 type OnboardingState = {
   method: "google" | "manual" | null;
@@ -9,16 +7,16 @@ type OnboardingState = {
 };
 
 export const sampleUniversityAccount = {
-  name: sampleProfile.name,
+  name: "Prathmesh Mehrotra",
   email: "prathmesh.mehrotra@alumni.bits.example",
   institution: "BITS Pilani",
 };
 
 // Separate fixture for the institution's record. Google supplies only the demo identity.
-const sampleAlumniRecord = {
+export const sampleAlumniRecord = {
   email: "prathmesh.mehrotra@alumni.bits.example",
-  name: sampleProfile.name,
-  batch: sampleProfile.batch,
+  name: "Prathmesh Mehrotra",
+  batch: "2026",
   degree: "B.E.",
   branch: "Computer Science",
 };
@@ -30,7 +28,8 @@ export const initialOnboardingState: OnboardingState = {
 };
 
 type OnboardingAction =
-  | { type: "reset" | "select-account" | "manual" | "check" | "request-review" }
+  | { type: "reset" | "select-account" | "manual" | "check" | "request-review" | "resume-review" }
+  | { type: "open-review"; details: AlumniDetails }
   | { type: "edit"; field: keyof AlumniDetails; value: string };
 
 export function recordDifferences(details: AlumniDetails) {
@@ -44,6 +43,8 @@ export function recordDifferences(details: AlumniDetails) {
 export function onboardingReducer(state: OnboardingState, action: OnboardingAction): OnboardingState {
   switch (action.type) {
     case "reset": return initialOnboardingState;
+    case "open-review": return { method: "manual", details: action.details, result: "review-requested" };
+    case "resume-review": return { ...state, method: "manual", result: "unchecked" };
     case "select-account":
       return { method: "google", result: "unchecked", details: {
         name: sampleUniversityAccount.name, batch: sampleAlumniRecord.batch,
