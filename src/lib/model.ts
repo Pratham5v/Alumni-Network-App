@@ -3,6 +3,23 @@ import { alumniEvents } from "./events";
 
 export type Profile = { name: string; batch: string; role: string; location: string };
 export type Commitment = "20-minute call" | "30-minute call" | "Chat";
+export type ProfileDetails = {
+  bio: string;
+  expertise: string;
+  help: string;
+  email: string;
+  phone: string;
+  linkedin: string;
+  portfolio: string;
+};
+export type ContactVisibility = "private" | "accepted-request" | "alumni";
+export type ProfilePreferences = {
+  emailVisibility: ContactVisibility;
+  phoneVisibility: ContactVisibility;
+  notifications: { requests: boolean; replies: boolean; events: boolean };
+  available: boolean;
+  commitment: Commitment;
+};
 export type Intent = {
   title: string;
   context: string;
@@ -33,6 +50,8 @@ export type IncomingRequest = {
 };
 export type DemoState = {
   profile: Profile;
+  profileDetails: ProfileDetails;
+  profilePreferences: ProfilePreferences;
   intent: Intent | null;
   request: HelpRequest | null;
   messages: Message[];
@@ -43,6 +62,25 @@ export type DemoState = {
   registeredEventIds: string[];
 };
 export const sampleProfile: Profile = { name: "Prathmesh Mehrotra", batch: "2026", role: "Software Engineer", location: "Gurgaon" };
+export const sampleProfileLinks = {
+  linkedin: "https://www.linkedin.com/in/demo-prathmesh-mehrotra",
+  portfolio: "https://prathmesh.example.com",
+};
+const sampleProfileDetails: ProfileDetails = {
+  bio: "Software engineer interested in backend systems, APIs, and applied AI.",
+  expertise: "Backend Engineering, APIs, Applied AI",
+  help: "Happy to share my AI engineering interview experience and help you decide what to prepare.",
+  email: "prathmesh@example.com",
+  phone: "",
+  ...sampleProfileLinks,
+};
+const sampleProfilePreferences: ProfilePreferences = {
+  emailVisibility: "private",
+  phoneVisibility: "private",
+  notifications: { requests: true, replies: true, events: false },
+  available: true,
+  commitment: "20-minute call",
+};
 export const demoReply = "I’m looking for advice on the product for my new startup. Does tomorrow at 6 PM work for a call?";
 export const sampleCallLink = "https://meet.example.com/alumni-call";
 export const sampleOutcome: Outcome = { happened: true, helpful: "Yes", resolved: true };
@@ -63,12 +101,14 @@ export const sampleIntent: Omit<Intent, "status"> = {
   commitment: "20-minute call",
   expires: "14",
 };
-export const initialState: DemoState = { profile: sampleProfile, intent: null, request: null, messages: [], conversationConfirmed: false, meeting: null, callLink: null, incoming: null, registeredEventIds: [] };
+export const initialState: DemoState = { profile: sampleProfile, profileDetails: sampleProfileDetails, profilePreferences: sampleProfilePreferences, intent: null, request: null, messages: [], conversationConfirmed: false, meeting: null, callLink: null, incoming: null, registeredEventIds: [] };
 export function isValidCallLink(value: string): boolean {
   try { return ["https:", "http:"].includes(new URL(value).protocol); } catch { return false; }
 }
 export type Action =
   | { type: "profile"; profile: Profile }
+  | { type: "profile-details"; details: ProfileDetails }
+  | { type: "profile-preferences"; preferences: ProfilePreferences }
   | { type: "publish"; intent: Omit<Intent, "status"> }
   | { type: "request"; request: Pick<HelpRequest, "personId" | "message" | "commitment"> }
   | { type: "accept" }
@@ -89,6 +129,8 @@ export type Action =
 export function demoReducer(state: DemoState, action: Action): DemoState {
   switch (action.type) {
     case "profile": return { ...state, profile: action.profile };
+    case "profile-details": return { ...state, profileDetails: action.details };
+    case "profile-preferences": return { ...state, profilePreferences: action.preferences };
     case "publish":
       if (!action.intent.title.trim() || !action.intent.context.trim() || state.request) return state;
       return { ...state, intent: { ...action.intent, status: "active" } };
@@ -140,7 +182,7 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
     case "register-event":
       if (state.registeredEventIds.includes(action.eventId) || !alumniEvents.some(event => event.id === action.eventId && event.registrationOpen)) return state;
       return { ...state, registeredEventIds: [...state.registeredEventIds, action.eventId] };
-    case "new-journey": return { ...initialState, profile: state.profile, incoming: state.incoming, registeredEventIds: state.registeredEventIds };
+    case "new-journey": return { ...initialState, profile: state.profile, profileDetails: state.profileDetails, profilePreferences: state.profilePreferences, incoming: state.incoming, registeredEventIds: state.registeredEventIds };
     case "reset": return initialState;
   }
 }

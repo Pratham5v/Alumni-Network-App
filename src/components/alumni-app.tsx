@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, Award, BadgeCheck, BriefcaseBusiness, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, GraduationCap, Home, Layers3, Linkedin, LoaderCircle, MapPin, MessageCircle, Plus, RotateCcw, Search, Send, ShieldCheck, SlidersHorizontal, Sparkles, Users, Video, X } from "lucide-react";
-import { demoReducer, demoReply, incomingScenario, initialState, isValidCallLink, sampleCallLink, sampleIntent, sampleOutcome, sampleProfile, type Commitment, type Intent, type Message, type Outcome, type Profile } from "@/lib/model";
+import { ArrowLeft, ArrowRight, Award, BadgeCheck, BriefcaseBusiness, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Eye, GraduationCap, Home, Layers3, Linkedin, LoaderCircle, Mail, MapPin, MessageCircle, Phone, Plus, RotateCcw, Search, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Users, Video, X } from "lucide-react";
+import { demoReducer, demoReply, incomingScenario, initialState, isValidCallLink, sampleCallLink, sampleIntent, sampleOutcome, sampleProfile, sampleProfileLinks, type Commitment, type ContactVisibility, type Intent, type Message, type Outcome, type Profile, type ProfileDetails, type ProfilePreferences } from "@/lib/model";
 import { people, relevanceToIntent, type Person } from "@/lib/people";
 import { googleCalendarUrl, interviewTimeLabel } from "@/lib/calendar";
 import { aiLecture, alumniEvents, distinguishedAlumnus, eventDateBadge, eventDateLabel, type AlumniEvent } from "@/lib/events";
 
-type Screen = "welcome" | "onboard" | "verify" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "received-request" | "received-conversation" | "distinguished-profile" | "events" | "event";
-const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "received-request", "received-conversation", "distinguished-profile", "events", "event"];
+type Screen = "welcome" | "onboard" | "verify" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "profile-edit" | "profile-settings" | "profile-preview" | "received-request" | "received-conversation" | "distinguished-profile" | "events" | "event";
+const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "profile-edit", "profile-settings", "profile-preview", "received-request", "received-conversation", "distinguished-profile", "events", "event"];
 type IntentForm = Omit<Intent, "status">;
 type ContactPreview = { title: string; value: string };
 type EventPage = { id: string; from: "events" | "distinguished-profile" };
@@ -32,6 +32,63 @@ function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectEle
   return <span className="select-wrap"><select {...props}>{children}</select><ChevronDown size={17} aria-hidden="true" /></span>;
 }
 function Tag({ children, warm = false }: { children: ReactNode; warm?: boolean }) { return <span className={`tag ${warm ? "warm" : ""}`}>{children}</span>; }
+
+function EditProfileForm({ details, onSave }: { details: ProfileDetails; onSave: (details: ProfileDetails) => void }) {
+  const [draft, setDraft] = useState(details);
+  function update(key: keyof ProfileDetails, value: string) { setDraft({ ...draft, [key]: value }); }
+  return <form className="form-card" onSubmit={event => {
+    event.preventDefault();
+    onSave({
+      bio: draft.bio.trim(), expertise: draft.expertise.trim(), help: draft.help.trim(),
+      email: draft.email.trim(), phone: draft.phone.trim(), linkedin: draft.linkedin.trim(), portfolio: draft.portfolio.trim(),
+    });
+  }}>
+    <Field label="How I can help"><textarea rows={3} maxLength={180} value={draft.help} onChange={e => update("help", e.target.value)} /></Field>
+    <Field label="About"><textarea rows={3} maxLength={280} value={draft.bio} onChange={e => update("bio", e.target.value)} /></Field>
+    <Field label="Expertise" hint="Separate skills with commas."><input maxLength={140} value={draft.expertise} onChange={e => update("expertise", e.target.value)} /></Field>
+    <fieldset className="profile-preference-group">
+      <legend>Contact &amp; links</legend>
+      <Field label="Email"><input type="email" maxLength={254} value={draft.email} onChange={e => update("email", e.target.value)} /></Field>
+      <Field label="Phone number"><input type="tel" maxLength={40} value={draft.phone} onChange={e => update("phone", e.target.value)} /></Field>
+      <Field label="LinkedIn URL"><input type="url" pattern="https?://.+" maxLength={250} placeholder="https://linkedin.com/in/…" value={draft.linkedin} onChange={e => update("linkedin", e.target.value)} /></Field>
+      <Field label="Portfolio URL"><input type="url" pattern="https?://.+" maxLength={250} placeholder="https://…" value={draft.portfolio} onChange={e => update("portfolio", e.target.value)} /></Field>
+    </fieldset>
+    <div className="action-footer"><Button type="submit">Save profile</Button></div>
+  </form>;
+}
+
+function ProfileSettingsForm({ preferences, onSave }: { preferences: ProfilePreferences; onSave: (preferences: ProfilePreferences) => void }) {
+  const [draft, setDraft] = useState(preferences);
+  return <form className="form-card" onSubmit={event => { event.preventDefault(); onSave(draft); }}>
+    <fieldset className="profile-preference-group">
+      <legend>Contact visibility</legend>
+      <p>Choose who can see your email and phone number.</p>
+      {([["Email visibility", "emailVisibility"], ["Phone number visibility", "phoneVisibility"]] as const).map(([label, key]) =>
+        <Field key={key} label={label}><Select value={draft[key]} onChange={e => setDraft({ ...draft, [key]: e.target.value as ContactVisibility })}>
+          <option value="private">Only me</option><option value="accepted-request">People with an accepted request</option><option value="alumni">Verified alumni</option>
+        </Select></Field>
+      )}
+    </fieldset>
+    <fieldset className="profile-preference-group">
+      <legend>Notification preferences</legend>
+      {([["New requests", "requests"], ["Request replies and messages", "replies"], ["Event reminders", "events"]] as const).map(([label, key]) =>
+        <label className="profile-toggle" key={key}><span>{label}</span><input type="checkbox" role="switch" checked={draft.notifications[key]} onChange={e => setDraft({ ...draft, notifications: { ...draft.notifications, [key]: e.target.checked } })} /></label>
+      )}
+      <p>Requests and replies control the Requests badge in this demo. Event reminder preferences are saved for this session.</p>
+    </fieldset>
+    <fieldset className="profile-preference-group">
+      <legend>Availability</legend>
+      <p>Pausing leaves existing conversations open.</p>
+      <Field label="Availability status"><Select value={draft.available ? "open" : "paused"} onChange={e => setDraft({ ...draft, available: e.target.value === "open" })}>
+        <option value="open">Open to helping</option><option value="paused">Paused</option>
+      </Select></Field>
+      <Field label="Preferred format"><Select value={draft.commitment} onChange={e => setDraft({ ...draft, commitment: e.target.value as Commitment })}>
+        <option>Chat</option><option>20-minute call</option><option>30-minute call</option>
+      </Select></Field>
+    </fieldset>
+    <div className="action-footer"><Button type="submit">Save settings</Button></div>
+  </form>;
+}
 function Confirmation({ message }: { message: string }) {
   return <p className="inline-confirmation"><span><Check size={14} aria-hidden="true" /></span>{message}</p>;
 }
@@ -103,7 +160,8 @@ export default function AlumniApp() {
   const request = state.request;
   const incoming = state.incoming;
   const confirmationMessage = confirmation?.screen === screen ? confirmation.message : "";
-  const unreadCount = (request && request.status !== "completed" ? 1 : 0) + (incoming?.unread ? 1 : 0);
+  const { notifications } = state.profilePreferences;
+  const unreadCount = (notifications.replies && request && request.status !== "completed" ? 1 : 0) + (notifications.requests && incoming?.unread ? 1 : 0);
   const firstName = state.profile.name.trim().split(/\s+/)[0] || "Prathmesh";
   const self = { initials: state.profile.name.split(/\s+/).map(name => name[0]).slice(0, 2).join(""), color: "sage" };
   const eventAttendees = state.registeredEventIds.includes(selectedEvent.id)
@@ -208,7 +266,7 @@ export default function AlumniApp() {
   }
   function restart() {
     timers.current.forEach(clearTimeout); timers.current = [];
-    dispatch({ type: "reset" }); setBusy(false); setProfileForm(sampleProfile); setIntentForm(sampleIntent); setOutcome(sampleOutcome); clearDiscoveryFilters(); setFiltersOpen(false); go("welcome");
+    dispatch({ type: "reset" }); setProfileForm(sampleProfile); setBusy(false); setIntentForm(sampleIntent); setOutcome(sampleOutcome); clearDiscoveryFilters(); setFiltersOpen(false); go("welcome");
   }
   function openReceived() { dispatch({ type: "read-incoming" }); go("received-request"); }
   function shareCallLink() { setCallLink(sampleCallLink); setSheet("call-link"); }
@@ -676,25 +734,102 @@ export default function AlumniApp() {
       <Button onClick={() => go("home")}>Back to home<ArrowRight size={18} aria-hidden="true" /></Button><Button variant="quiet" onClick={() => go("intent")}>View intent</Button>
     </div> : <Empty icon={<CheckCheck size={27} />} title="Your outcome will appear here" action={<Button onClick={() => go("requests")}>View requests</Button>}>Complete the interaction and record how it went.</Empty>; break;
 
-    case "my-profile": content = <>
-      {back("home", "Home")}{title("Your profile")}
-      <section className="verification-card account-card">
-        <div className="verification-identity"><Avatar person={self} size="large" /><div><h2>{state.profile.name}</h2><p>{state.profile.role}</p></div></div>
-        <Tag><BadgeCheck size={15} aria-hidden="true" />Verified demo profile</Tag>
-        <dl><div><dt>Graduation year</dt><dd>{state.profile.batch}</dd></div><div><dt>Location</dt><dd>{state.profile.location}</dd></div></dl>
-      </section>
-      <section className="account-demo"><h2>Walkthrough</h2><p>Restart to clear your demo progress and begin again.</p><Button variant="secondary" onClick={restart}><RotateCcw size={16} aria-hidden="true" />Restart walkthrough</Button></section>
+    case "my-profile":
+    case "profile-preview": {
+      const preview = screen === "profile-preview";
+      const { name, role, batch, location: city } = state.profile;
+      const { bio, expertise: skills, help, email, phone, linkedin, portfolio } = state.profileDetails;
+      const { available, commitment: format, emailVisibility, phoneVisibility } = state.profilePreferences;
+      const expertiseList = [...new Set(skills.split(",").map(skill => skill.trim()).filter(Boolean))];
+      const communities = [...new Set(["BITS", city, "Software Engineering"])];
+      const showEmail = email && (!preview || emailVisibility === "alumni");
+      const showPhone = phone && (!preview || phoneVisibility === "alumni");
+      const links = [
+        { label: "LinkedIn", url: linkedin, sample: linkedin === sampleProfileLinks.linkedin, icon: <Linkedin size={18} aria-hidden="true" /> },
+        { label: "Portfolio", url: portfolio, sample: portfolio === sampleProfileLinks.portfolio, icon: <BriefcaseBusiness size={18} aria-hidden="true" /> },
+      ].filter(({ url }) => url && isValidCallLink(url));
+      content = <>
+        <header className="alumni-profile-header">
+          {preview ? back("my-profile", "Your profile") : back("home", "Home")}
+          <span>{preview ? "Profile preview" : "Your profile"}</span>
+        </header>
+        <div className="alumni-profile-content">
+          {preview && <p className="self-profile-preview"><Eye size={16} aria-hidden="true" />Viewing as a verified alumnus</p>}
+          <div className="alumni-profile-identity self-profile-identity">
+            <Avatar person={self} size="large" />
+            <div>
+              <h1 ref={headingRef} tabIndex={-1}>{name}</h1>
+              <p>{role}</p>
+              <div className="meta"><span><MapPin size={15} aria-hidden="true" />{city}</span><span><GraduationCap size={15} aria-hidden="true" />Class of {batch}</span></div>
+            </div>
+          </div>
+          {confirmationMessage && <Confirmation message={confirmationMessage} />}
+          {!preview && <>
+            <div className="self-profile-actions">
+              <Button onClick={() => go("profile-edit")}>Edit profile</Button>
+              <Button variant="secondary" onClick={() => go("profile-settings")}><Settings size={17} aria-hidden="true" />Settings</Button>
+            </div>
+            <button type="button" className="text-button self-profile-link" onClick={() => go("profile-preview")}><Eye size={16} aria-hidden="true" />Preview how alumni see you</button>
+          </>}
+          {(!preview || available || help) && <section className="alumni-profile-help self-profile-help" data-available={available}>
+            <Tag>{available && <span className="availability-dot" />}{available ? "Open to helping" : "Availability paused"}</Tag>
+            <h2><span><MessageCircle size={16} aria-hidden="true" /></span>How I can help</h2>
+            {help && <p>{help}</p>}
+            {available && <strong><Clock3 size={15} aria-hidden="true" />{format}</strong>}
+            {!preview && <button type="button" className="text-button self-profile-link" onClick={() => go("profile-settings")}>Manage availability<ChevronRight size={15} aria-hidden="true" /></button>}
+          </section>}
+          {bio && <section className="alumni-profile-section"><h2>About</h2><p>{bio}</p></section>}
+          {expertiseList.length > 0 && <section className="alumni-profile-section"><h2>Expertise</h2><ul className="alumni-profile-chips">{expertiseList.map(skill => <li key={skill}>{skill}</li>)}</ul></section>}
+          <section className="alumni-profile-section"><h2>Communities</h2><ul className="alumni-profile-chips community-chips">{communities.map(community => <li key={community}>{community}</li>)}</ul></section>
+          {(showEmail || showPhone || links.length > 0) && <section className="alumni-profile-contact">
+            <h2>Contact &amp; links</h2>
+            <div>
+              {links.map(({ label, url, sample, icon }) => sample
+                ? <button key={label} type="button" aria-label={label} title={label} onClick={() => setSheet({ title: `Sample ${label}`, value: url })}>{icon}</button>
+                : <a key={label} href={url} target="_blank" rel="noreferrer" aria-label={label} title={label}>{icon}</a>)}
+              {showEmail && <button type="button" aria-label="Email" title="Email" onClick={() => setSheet({ title: "Email", value: email })}><Mail size={18} aria-hidden="true" /></button>}
+              {showPhone && <button type="button" aria-label="Phone" title="Phone" onClick={() => setSheet({ title: "Phone", value: phone })}><Phone size={18} aria-hidden="true" /></button>}
+            </div>
+          </section>}
+          {activeIntent && <section className="alumni-profile-section">
+            <h2>{preview ? "Current intent" : "Your intent"}</h2>
+            {preview ? <ul className="alumni-profile-intents"><li><strong>{activeIntent.title}</strong><p>{activeIntent.commitment}</p></li></ul> :
+              <button type="button" className="self-profile-intent" onClick={() => go("intent")}><div><strong>{activeIntent.title}</strong><span>Active · {activeIntent.commitment}</span></div><ChevronRight size={17} aria-hidden="true" /></button>}
+          </section>}
+          {!preview && <section className="account-demo">
+            <Button variant="quiet" onClick={restart}><RotateCcw size={16} aria-hidden="true" />Restart walkthrough</Button>
+          </section>}
+        </div>
+      </>;
+      break;
+    }
+
+    case "profile-edit": content = <>
+      {back("my-profile", "Your profile")}{title("Edit profile")}
+      <EditProfileForm details={state.profileDetails} onSave={details => {
+        dispatch({ type: "profile-details", details });
+        go("my-profile", "Profile updated");
+      }} />
+    </>; break;
+
+    case "profile-settings": content = <>
+      {back("my-profile", "Your profile")}{title("Profile settings")}
+      <ProfileSettingsForm preferences={state.profilePreferences} onSave={preferences => {
+        dispatch({ type: "profile-preferences", preferences });
+        go("my-profile", "Settings saved");
+      }} />
     </>; break;
   }
 
   const isAlumniProfile = screen === "profile" || screen === "distinguished-profile";
+  const usesProfileLayout = isAlumniProfile || screen === "my-profile" || screen === "profile-preview";
   const selectedTab = screen === "events" || screen === "event" ? "events" : ["create", "intent", "intents"].includes(screen) ? "intents" : screen === "people" || isAlumniProfile ? "people" : ["compose", "requests", "request", "conversation", "outcome", "success", "received-request", "received-conversation"].includes(screen) ? "requests" : "home";
   return <div className={`app-shell${inside ? " workspace-shell" : ""}`} data-screen={screen}>
     {inside && <header className="app-header">
       <button className="wordmark" onClick={() => go("home")} aria-label="Alumni home"><Layers3 size={23} strokeWidth={1.7} aria-hidden="true" />alumni<span className="wordmark-period">.</span></button>
       <button className="account-button" aria-label="Your profile" onClick={() => go("my-profile")}><Avatar person={self} size="small" /><span className="account-name">{firstName}</span></button>
     </header>}
-    <main id="main-content" className={screen === "welcome" ? "welcome-main" : isAlumniProfile ? "alumni-profile" : screen === "event" ? "event-page" : "main-content"} key={screen}>{content}</main>
+    <main id="main-content" className={screen === "welcome" ? "welcome-main" : usesProfileLayout ? "alumni-profile" : screen === "event" ? "event-page" : "main-content"} key={screen}>{content}</main>
     <Sheet open={sheet !== null} title={contactPreview?.title ?? (sheet === "attendees" ? "Who’s coming" : sheet === "call-link" ? "Share a call link" : sheet === "decline" ? "Decline request" : "Suggest an alternative")} onClose={() => setSheet(null)}>
       {sheet === "attendees" ? <>
         <p className="event-attendee-event">{selectedEvent.title}</p>

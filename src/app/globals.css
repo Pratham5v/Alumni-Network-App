@@ -297,8 +297,8 @@ input::placeholder, textarea::placeholder { color: #687a75; }
 .alumni-profile-intents p { margin-top: 3px; color: var(--muted); font-size: 11px; }
 .alumni-profile-contact { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--line); }
 .alumni-profile-contact > div { display: flex; gap: 7px; }
-.alumni-profile-contact button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid #dfebe4; border-radius: 9px; background: #f4f8f5; color: var(--teal-dark); }
-.alumni-profile-contact button:hover { background: #e8f1ec; }
+.alumni-profile-contact :is(button, a) { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid #dfebe4; border-radius: 9px; background: #f4f8f5; color: var(--teal-dark); }
+.alumni-profile-contact :is(button, a):hover { background: #e8f1ec; }
 .alumni-contact-value { color: var(--muted); }
 .alumni-profile-action { position: sticky; bottom: 0; z-index: 1; padding: 10px var(--profile-padding) max(13px, env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid var(--line); }
 .alumni-profile-action .button { position: relative; min-height: 45px; padding: 9px 30px; }
@@ -470,9 +470,27 @@ input::placeholder, textarea::placeholder { color: #687a75; }
 .verification-card dt, .summary-card dt { color: var(--muted); }
 .verification-card dd, .summary-card dd { margin: 0; font-weight: 650; text-align: right; overflow-wrap: anywhere; }
 .verification-card .text-button { min-height: 44px; padding-bottom: 4px; }
-.account-card .tag { margin-top: 12px; }
+.self-profile-identity > div { min-width: 0; overflow-wrap: anywhere; }
+.self-profile-identity .meta > span { white-space: normal; }
+.self-profile-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.self-profile-actions .button { flex: 1; min-width: max-content; min-height: 44px; }
+.self-profile-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 5px 0; font-size: 13px; text-align: left; }
+.self-profile-help > .self-profile-link { margin-top: 4px; }
+.self-profile-help[data-available="false"], .self-profile-help[data-available="false"] .tag { background: var(--soft); border-color: var(--line); }
+.self-profile-preview { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 11px; border-radius: 8px; background: var(--pale); color: var(--teal-dark); font-size: 13px; }
+.self-profile-intent { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left; margin-top: 7px; padding: 10px 12px; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; }
+.self-profile-intent strong { display: block; font-size: 13px; overflow-wrap: anywhere; }
+.self-profile-intent span { display: block; font-size: 12px; color: var(--muted); }
+.self-profile-intent svg { flex: none; color: var(--teal); }
+.profile-preference-group { border: 1px solid var(--line); border-radius: 12px; min-width: 0; padding: 12px; margin: 0 0 15px; background: var(--surface); }
+.profile-preference-group legend { padding: 0 5px; margin-inline-start: -5px; font-size: 15px; font-weight: 700; }
+.profile-preference-group p { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.profile-preference-group p:last-child, .profile-preference-group .field:last-child { margin-bottom: 0; }
+.profile-toggle { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; cursor: pointer; }
+.profile-toggle + .profile-toggle { border-top: 1px solid var(--line); }
+.profile-toggle input { flex: none; width: 19px; height: 19px; min-height: 0; accent-color: var(--teal); }
+.profile-toggle + p { margin-top: 7px; }
 .account-demo { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 15px; }
-.account-demo p { font-size: 14px; color: var(--muted); margin: 4px 0 12px; }
 .recipient-card { border: 1px solid #d6e8df; border-radius: var(--card-radius); background: var(--pale); padding: 0 14px 10px; margin-bottom: 13px; }
 .recipient-card .profile-summary { padding: 11px 0; }
 .recipient-card span:not(.avatar) { color: var(--muted); font-size: 12px; }
@@ -531,7 +549,7 @@ input::placeholder, textarea::placeholder { color: #687a75; }
   .welcome-visual { max-width: 231px; }
 }
 @media (width < 720px) {
-  .app-shell:is([data-screen="profile"], [data-screen="distinguished-profile"], [data-screen="event"]) > :is(.app-header, .bottom-nav) { display: none; }
+  .app-shell:is([data-screen="profile"], [data-screen="my-profile"], [data-screen="profile-preview"], [data-screen="distinguished-profile"], [data-screen="event"]) > :is(.app-header, .bottom-nav) { display: none; }
 }
 @media (min-width: 720px) {
   :root { --gutter: 28px; --header-height: 64px; }
