@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Vikram Iyer">
+  <title>Vikram Iyer</title>
+  <defs><clipPath id="crop-vikram"><circle cx="64" cy="64" r="59"/></clipPath></defs>
+  <circle cx="64" cy="64" r="59" fill="#cee0ef"/>
+  <g clip-path="url(#crop-vikram)">
+    <g fill="none" stroke="#242320" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke-width="1.5"><path d="M40 59 C35 53 36 46 37 41 C36 34 41 29 47 27 C48 21 56 20 62 23 C70 18 79 20 84 24 C90 23 97 29 96 36 C94 39 92 45 92 53 L89 59"/>
+<path d="M40 59 L43 44 C51 45 61 41 66 34 C74 42 82 43 92 42"/>
+<path d="M42 61 C35 57 35 69 42 71 L45 81 C51 89 59 93 65 93 C74 93 84 87 87 79 L89 72 C96 71 98 60 90 60"/>
+<path d="M47 76 C50 83 55 84 58 84 C58 80 61 78 65 78 C70 78 73 81 73 84 C78 82 82 81 85 76"/>
+<path d="M54 90 L53 98 M76 90 L78 98 M54 98 L65 105 L78 98 M13 123 C24 108 38 105 54 98 M78 98 C95 105 109 110 119 123 M61 104 L61 114 L67 114"/></g>
+      <g stroke-width="1.13"><path d="M43 38 Q55 35 62 29 M73 29 Q82 29 89 34 M47 52 Q53 49 59 51 M73 51 Q79 49 84 51"/>
+<rect x="45" y="55" width="17" height="12" rx="3"/><rect x="69" y="55" width="17" height="12" rx="3"/>
+<path d="M42 57 L45 58 M62 59 Q65 57 69 59 M86 58 L91 57 M65 62 L63 71 Q65 73 68 71 M59 83 Q65 86 71 82 M60 88 L62 89 M66 89 L68 88"/></g>
+    </g>
+    <g fill="#242320"><ellipse cx="54" cy="60" rx="1.58" ry="1.76"/><ellipse cx="77" cy="60" rx="1.58" ry="1.76"/></g>
+  </g>
+</svg>

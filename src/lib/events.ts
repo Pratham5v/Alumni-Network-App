@@ -1,3 +1,12 @@
+type EventAttendee = {
+  id: string;
+  name: string;
+  initials: string;
+  color: string;
+  role: string;
+  batch: string;
+};
+
 export type AlumniEvent = {
   id: string;
   title: string;
@@ -9,7 +18,13 @@ export type AlumniEvent = {
   format: string;
   description: string;
   registrationOpen: boolean;
+  attendees: readonly EventAttendee[];
 };
+
+const ananya = { id: "ananya", name: "Ananya Sen", initials: "AS", color: "peach", role: "Product Designer", batch: "2020" };
+const vikram = { id: "vikram", name: "Vikram Iyer", initials: "VI", color: "blue", role: "Engineering Manager", batch: "2014" };
+const meera = { id: "meera", name: "Meera Nair", initials: "MN", color: "peach", role: "Data Scientist", batch: "2021" };
+const ishaan = { id: "ishaan", name: "Ishaan Sethi", initials: "IS", color: "sage", role: "Software Engineer", batch: "2023" };
 
 export const distinguishedAlumnus = {
   id: "dev",
@@ -47,6 +62,7 @@ export const aiLecture: AlumniEvent = {
   format: "Online lecture",
   description: "Dev shares what changes when an AI prototype meets real users. Learn how to choose a first use case, evaluate model output, and monitor what breaks after launch. The session closes with a short Q&A.",
   registrationOpen: true,
+  attendees: [ananya, vikram, meera, ishaan],
 };
 
 export const alumniEvents: AlumniEvent[] = [
@@ -62,6 +78,7 @@ export const alumniEvents: AlumniEvent[] = [
     format: "In person · Bengaluru",
     description: "Meet fellow alumni in Bengaluru for informal conversations about what you’re working on and where the network could help.",
     registrationOpen: false,
+    attendees: [ananya, ishaan],
   },
   {
     id: "engineering-career-panel",
@@ -74,6 +91,7 @@ export const alumniEvents: AlumniEvent[] = [
     format: "Online panel",
     description: "Alumni share how they navigated early career choices, moved between roles, and decided when to specialise.",
     registrationOpen: false,
+    attendees: [vikram, meera, ishaan],
   },
 ];
 

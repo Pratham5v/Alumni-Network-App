@@ -412,6 +412,23 @@ input::placeholder, textarea::placeholder { color: #687a75; }
 .event-detail-content .detail-section { margin: 14px 0 0; }
 .event-detail-content .detail-section h2 { font-size: 15px; }
 .event-detail-content .detail-section p { margin-top: 5px; font-size: 14px; line-height: 1.55; }
+.event-attendance { margin-top: 16px; padding: 10px 12px 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.event-attendance h2 { font-size: 15px; }
+.event-attendance-summary, .event-attendance-preview { display: flex; align-items: center; flex-wrap: wrap; gap: 0 9px; }
+.event-attendance-summary { justify-content: space-between; }
+.event-attendance-preview { min-height: 44px; }
+.event-attendee-avatars { display: flex; padding-inline-start: 1px; }
+.event-attendee-avatars:empty { display: none; }
+.event-attendee-avatars .avatar { width: 29px; height: 29px; font-size: 9px; border: 2px solid var(--surface); }
+.event-attendee-avatars .avatar + .avatar { margin-inline-start: -7px; }
+.event-attendee-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.event-attendees-link { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0; font-size: 13px; }
+.event-attendee-event { margin: -7px 0 8px; color: var(--muted); font-size: 14px; }
+.event-attendee-list { list-style: none; margin: 0; padding: 0; }
+.event-attendee-list li { display: flex; align-items: center; gap: 11px; padding: 9px 0; }
+.event-attendee-list li + li { border-top: 1px solid var(--line); }
+.event-attendee-list li div { min-width: 0; overflow-wrap: anywhere; }
+.event-attendee-list li div span { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
 .event-action { position: sticky; bottom: 0; z-index: 1; padding: 9px var(--event-padding) max(11px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fbfaf5; }
 .event-action .button.primary:not(:disabled) { background: var(--teal-dark); }
 .event-action .button.primary:not(:disabled):hover { background: var(--teal); }

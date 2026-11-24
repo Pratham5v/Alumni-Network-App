@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Meera Nair">
+  <title>Meera Nair</title>
+  <defs><clipPath id="crop-meera"><circle cx="64" cy="64" r="59"/></clipPath></defs>
+  <circle cx="64" cy="64" r="59" fill="#f5dbb9"/>
+  <g clip-path="url(#crop-meera)">
+    <g fill="none" stroke="#242320" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke-width="1.5"><path d="M43 71 C35 64 32 55 33 45 C34 29 47 19 62 19 C81 17 95 29 96 46 C97 60 92 70 88 77"/>
+<path d="M42 60 C43 49 44 43 51 39 C57 36 60 34 62 28 C66 36 72 41 80 43 C85 44 88 50 89 59"/>
+<path d="M42 61 C35 60 37 69 43 71 C46 79 53 86 61 89 C71 91 81 85 87 73 C94 72 96 60 90 60"/>
+<path d="M93 69 C99 71 100 78 96 82 C101 83 102 88 98 92 C103 95 102 101 98 103 C101 107 99 111 95 113 Q91 119 91 123 Q86 120 87 114 C82 112 82 108 86 104 C81 102 81 96 86 94 C82 91 82 86 86 83"/>
+<path d="M53 85 L52 96 M74 87 L76 96 M52 95 C48 100 42 101 33 104 C24 107 17 113 10 123 M76 96 Q81 100 85 101 M99 106 Q111 110 120 123 M49 98 C57 111 72 111 80 98"/></g>
+      <g stroke-width="1.13"><path d="M39 47 Q41 34 51 29 M68 26 Q84 27 89 42 M86 83 Q91 86 96 82 M86 94 Q91 97 98 92 M86 104 Q91 107 98 103 M87 114 Q91 115 95 113"/>
+<path d="M46 54 Q52 51 57 53 M73 53 Q78 51 83 54 M65 59 C64 64 61 67 64 69 L68 69 M56 75 Q63 81 72 75"/></g>
+    </g>
+    <g fill="#242320"><ellipse cx="52" cy="59" rx="1.58" ry="1.76"/><ellipse cx="77" cy="59" rx="1.58" ry="1.76"/></g>
+  </g>
+</svg>

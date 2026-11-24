@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Ananya Sen">
+  <title>Ananya Sen</title>
+  <defs><clipPath id="crop-ananya"><circle cx="64" cy="64" r="59"/></clipPath></defs>
+  <circle cx="64" cy="64" r="59" fill="#f3c7d1"/>
+  <g clip-path="url(#crop-ananya)">
+    <g fill="none" stroke="#242320" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke-width="1.5"><path d="M37 71 C28 68 28 58 31 51 C29 40 35 29 43 26 C47 18 56 16 64 20 C72 15 83 17 88 24 C98 27 102 36 99 45 C104 53 100 62 94 67 C95 74 90 81 83 80"/>
+<path d="M41 62 C39 56 42 47 49 42 C55 39 62 36 65 30 C71 39 76 44 85 46 C89 49 90 53 89 61"/>
+<path d="M41 60 C34 57 35 69 42 70 C45 80 54 88 63 89 C73 90 84 82 88 71 C95 70 97 60 90 60"/>
+<path d="M39 71 C34 71 33 78 38 81 C41 83 45 81 45 77 M91 71 C96 71 97 77 94 80 C91 83 87 81 86 77"/>
+<path d="M54 86 L53 96 C52 101 44 102 36 104 C25 107 16 114 10 124 M75 87 L77 96 C78 101 86 102 96 105 C106 108 115 114 121 124 M43 102 Q64 120 87 102"/></g>
+      <g stroke-width="1.13"><path d="M35 47 Q37 33 48 29 M50 34 Q58 30 59 25 M77 26 Q88 29 91 38 M93 48 Q98 53 95 58 M36 62 Q37 64 39 65"/>
+<path d="M47 54 Q52 51 57 53 M72 53 Q77 50 82 53 M65 59 C65 64 62 67 65 69 L68 68 M57 76 Q64 81 72 75"/></g>
+    </g>
+    <g fill="#242320"><ellipse cx="53" cy="59" rx="1.58" ry="1.76"/><ellipse cx="77" cy="59" rx="1.58" ry="1.76"/></g>
+  </g>
+</svg>

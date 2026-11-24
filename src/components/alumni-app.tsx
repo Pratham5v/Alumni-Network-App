@@ -82,7 +82,7 @@ export default function AlumniApp() {
   const [requestMessage, setRequestMessage] = useState("");
   const [commitment, setCommitment] = useState<Commitment>("20-minute call");
   const [outcome, setOutcome] = useState<Partial<Outcome>>(sampleOutcome);
-  const [sheet, setSheet] = useState<"call-link" | "decline" | "alternative" | ContactPreview | null>(null);
+  const [sheet, setSheet] = useState<"call-link" | "decline" | "alternative" | "attendees" | ContactPreview | null>(null);
   const [callLink, setCallLink] = useState(sampleCallLink);
   const [declineMessage, setDeclineMessage] = useState<string>(incomingScenario.decline);
   const [alternativeMessage, setAlternativeMessage] = useState<string>(incomingScenario.alternative);
@@ -106,6 +106,9 @@ export default function AlumniApp() {
   const unreadCount = (request && request.status !== "completed" ? 1 : 0) + (incoming?.unread ? 1 : 0);
   const firstName = state.profile.name.trim().split(/\s+/)[0] || "Prathmesh";
   const self = { initials: state.profile.name.split(/\s+/).map(name => name[0]).slice(0, 2).join(""), color: "sage" };
+  const eventAttendees = state.registeredEventIds.includes(selectedEvent.id)
+    ? [{ ...self, name: state.profile.name, role: state.profile.role, batch: state.profile.batch, id: undefined }, ...selectedEvent.attendees]
+    : selectedEvent.attendees;
   const replySent = state.messages.some(message => message.from === "you");
 
   const go = useCallback((next: Screen, message?: string, event?: EventPage, match = false) => {
@@ -474,6 +477,20 @@ export default function AlumniApp() {
             <div><dt>{selectedEvent.format.startsWith("Online") ? <Video size={16} aria-hidden="true" /> : <MapPin size={16} aria-hidden="true" />}<span className="sr-only">Format</span></dt><dd>{selectedEvent.format}</dd></div>
           </dl>
           <section className="detail-section"><h2>About this event</h2><p>{selectedEvent.description}</p></section>
+          <section className="event-attendance" aria-labelledby="event-attendance-heading">
+            <h2 id="event-attendance-heading">Who’s coming</h2>
+            <div className="event-attendance-summary">
+              <div className="event-attendance-preview">
+                <span className="event-attendee-avatars" aria-hidden="true">{eventAttendees.slice(0, 4).map(attendee =>
+                  <Avatar key={attendee.id ?? "you"} person={attendee} size="small" />
+                )}</span>
+                <span className="event-attendee-count" role="status">{eventAttendees.length} going</span>
+              </div>
+              {eventAttendees.length > 0 && <button type="button" className="text-button event-attendees-link" aria-haspopup="dialog" onClick={() => setSheet("attendees")}>
+                See all attendees<ChevronRight size={15} aria-hidden="true" />
+              </button>}
+            </div>
+          </section>
         </div>
         <footer className="event-action">
           <Button className="full-width" disabled={registered || !selectedEvent.registrationOpen} onClick={() => {
@@ -678,8 +695,16 @@ export default function AlumniApp() {
       <button className="account-button" aria-label="Your profile" onClick={() => go("my-profile")}><Avatar person={self} size="small" /><span className="account-name">{firstName}</span></button>
     </header>}
     <main id="main-content" className={screen === "welcome" ? "welcome-main" : isAlumniProfile ? "alumni-profile" : screen === "event" ? "event-page" : "main-content"} key={screen}>{content}</main>
-    <Sheet open={sheet !== null} title={contactPreview?.title ?? (sheet === "call-link" ? "Share a call link" : sheet === "decline" ? "Decline request" : "Suggest an alternative")} onClose={() => setSheet(null)}>
-      {contactPreview ? <p className="alumni-contact-value">{contactPreview.value}</p> : sheet === "call-link" ? <form onSubmit={e => { e.preventDefault(); if (!isValidCallLink(callLink.trim())) return; dispatch({ type: "share-call-link", url: callLink, target: "sent" }); setSheet(null); setConfirmation({ screen: "conversation", message: "Call link shared in the conversation." }); }}>
+    <Sheet open={sheet !== null} title={contactPreview?.title ?? (sheet === "attendees" ? "Who’s coming" : sheet === "call-link" ? "Share a call link" : sheet === "decline" ? "Decline request" : "Suggest an alternative")} onClose={() => setSheet(null)}>
+      {sheet === "attendees" ? <>
+        <p className="event-attendee-event">{selectedEvent.title}</p>
+        <ul className="event-attendee-list" aria-label="Attendees">
+          {eventAttendees.map(attendee => <li key={attendee.id ?? "you"}>
+            <Avatar person={attendee} size="small" />
+            <div><strong>{attendee.name}{!attendee.id && " (you)"}</strong><span>{attendee.role} · Class of {attendee.batch}</span></div>
+          </li>)}
+        </ul>
+      </> : contactPreview ? <p className="alumni-contact-value">{contactPreview.value}</p> : sheet === "call-link" ? <form onSubmit={e => { e.preventDefault(); if (!isValidCallLink(callLink.trim())) return; dispatch({ type: "share-call-link", url: callLink, target: "sent" }); setSheet(null); setConfirmation({ screen: "conversation", message: "Call link shared in the conversation." }); }}>
         <Field label="Call link"><input type="url" required value={callLink} onChange={e => setCallLink(e.target.value)} /></Field>
         <p className="field-hint">This sample link is shared in the chat. No meeting opens.</p>
         <div className="action-footer"><Button type="submit" disabled={!isValidCallLink(callLink.trim())}>Share link</Button></div>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Ishaan Sethi">
+  <title>Ishaan Sethi</title>
+  <defs><clipPath id="crop-ishaan"><circle cx="64" cy="64" r="59"/></clipPath></defs>
+  <circle cx="64" cy="64" r="59" fill="#cce2ce"/>
+  <g clip-path="url(#crop-ishaan)">
+    <g fill="none" stroke="#242320" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke-width="1.5"><path d="M41 60 C36 58 33 54 35 49 C29 45 32 38 36 36 C33 31 39 25 44 25 C44 19 51 17 56 20 C60 14 69 15 73 19 C79 16 86 19 88 23 C94 22 100 28 98 33 C105 36 104 44 99 47 C101 53 96 58 89 59"/>
+<path d="M42 60 C43 55 43 47 46 43 C51 45 57 43 59 39 C64 44 72 42 75 38 C78 43 84 44 88 42 C90 48 90 52 89 60"/>
+<path d="M42 61 C35 56 35 68 42 72 C44 79 51 86 57 88 C63 90 70 90 76 87 C82 83 87 77 89 71 C96 70 97 59 90 60"/>
+<path d="M55 87 L54 97 C49 101 38 101 30 105 C20 110 13 117 11 124 M76 86 L77 97 C82 101 93 102 101 106 C109 110 116 116 120 124 M52 98 Q65 110 79 98 M49 101 Q65 116 82 101"/></g>
+      <g stroke-width="1.13"><path d="M42 37 Q43 31 49 32 Q48 27 54 26 M58 31 Q61 25 68 27 M72 28 Q77 23 82 27 M85 33 Q90 30 93 36 M48 53 Q53 50 58 53 M73 52 Q78 50 83 52 M64 60 C64 64 61 67 64 68 L68 67 M55 74 Q63 82 74 74 M58 77 Q64 79 70 77 M42 64 L39 63 M90 64 L93 63"/></g>
+    </g>
+    <g fill="#242320"><ellipse cx="53" cy="59" rx="1.58" ry="1.76"/><ellipse cx="78" cy="58" rx="1.58" ry="1.76"/></g>
+  </g>
+</svg>
