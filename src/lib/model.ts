@@ -1,4 +1,5 @@
 import { tomorrowInterview, type InterviewMeeting } from "./calendar";
+import { alumniEvents } from "./events";
 
 export type Profile = { name: string; batch: string; role: string; location: string };
 export type Commitment = "20-minute call" | "30-minute call" | "Chat";
@@ -39,6 +40,7 @@ export type DemoState = {
   meeting: InterviewMeeting | null;
   callLink: string | null;
   incoming: IncomingRequest | null;
+  registeredEventIds: string[];
 };
 export const sampleProfile: Profile = { name: "Prathmesh Mehrotra", batch: "2026", role: "Software Engineer", location: "Gurgaon" };
 export const demoReply = "I’m looking for advice on the product for my new startup. Does tomorrow at 6 PM work for a call?";
@@ -61,7 +63,7 @@ export const sampleIntent: Omit<Intent, "status"> = {
   commitment: "20-minute call",
   expires: "14",
 };
-export const initialState: DemoState = { profile: sampleProfile, intent: null, request: null, messages: [], conversationConfirmed: false, meeting: null, callLink: null, incoming: null };
+export const initialState: DemoState = { profile: sampleProfile, intent: null, request: null, messages: [], conversationConfirmed: false, meeting: null, callLink: null, incoming: null, registeredEventIds: [] };
 export function isValidCallLink(value: string): boolean {
   try { return ["https:", "http:"].includes(new URL(value).protocol); } catch { return false; }
 }
@@ -79,6 +81,7 @@ export type Action =
   | { type: "send-incoming-reply"; now: string }
   | { type: "receive-incoming-call-link" }
   | { type: "outcome"; outcome: Outcome }
+  | { type: "register-event"; eventId: string }
   | { type: "new-journey" }
   | { type: "reset" };
 
@@ -134,7 +137,10 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
         request: { ...state.request, status: "completed", outcome: action.outcome },
         intent: state.intent ? { ...state.intent, status: action.outcome.resolved ? "resolved" : "active" } : null,
       };
-    case "new-journey": return { ...initialState, profile: state.profile, incoming: state.incoming };
+    case "register-event":
+      if (state.registeredEventIds.includes(action.eventId) || !alumniEvents.some(event => event.id === action.eventId && event.registrationOpen)) return state;
+      return { ...state, registeredEventIds: [...state.registeredEventIds, action.eventId] };
+    case "new-journey": return { ...initialState, profile: state.profile, incoming: state.incoming, registeredEventIds: state.registeredEventIds };
     case "reset": return initialState;
   }
 }

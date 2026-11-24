@@ -2,15 +2,18 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, BadgeCheck, BriefcaseBusiness, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, GraduationCap, Home, Layers3, Linkedin, LoaderCircle, MapPin, MessageCircle, Plus, RotateCcw, Search, Send, ShieldCheck, Sparkles, Users, Video, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BadgeCheck, BriefcaseBusiness, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, GraduationCap, Home, Layers3, Linkedin, LoaderCircle, MapPin, MessageCircle, Plus, RotateCcw, Search, Send, ShieldCheck, Sparkles, Users, Video, X } from "lucide-react";
 import { demoReducer, demoReply, incomingScenario, initialState, isValidCallLink, sampleCallLink, sampleIntent, sampleOutcome, sampleProfile, type Commitment, type Intent, type Message, type Outcome, type Profile } from "@/lib/model";
 import { people, type Person } from "@/lib/people";
 import { googleCalendarUrl, interviewTimeLabel } from "@/lib/calendar";
+import { aiLecture, alumniEvents, distinguishedAlumnus, eventDateBadge, eventDateLabel, type AlumniEvent } from "@/lib/events";
 
-type Screen = "welcome" | "onboard" | "verify" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "received-request" | "received-conversation";
-const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "received-request", "received-conversation"];
+type Screen = "welcome" | "onboard" | "verify" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "received-request" | "received-conversation" | "distinguished-profile" | "events" | "event";
+const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "received-request", "received-conversation", "distinguished-profile", "events", "event"];
 type IntentForm = Omit<Intent, "status">;
 type ContactPreview = { title: string; value: string };
+type EventPage = { id: string; from: "events" | "distinguished-profile" };
+const defaultEventPage: EventPage = { id: aiLecture.id, from: "events" };
 const riya = { id: "riya", initials: "RS", color: "sage" };
 
 function Button({ children, variant = "primary", busy, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "quiet"; busy?: boolean }) {
@@ -67,6 +70,7 @@ export default function AlumniApp() {
   const [profileForm, setProfileForm] = useState<Profile>(sampleProfile);
   const [intentForm, setIntentForm] = useState<IntentForm>(sampleIntent);
   const [personId, setPersonId] = useState("aarav");
+  const [eventPage, setEventPage] = useState(defaultEventPage);
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("All locations");
   const [expertise, setExpertise] = useState("All expertise");
@@ -85,6 +89,7 @@ export default function AlumniApp() {
   const lastThread = useRef<{ screen: Screen; length: number } | null>(null);
   const person = people.find(p => p.id === personId) || people[0];
   const recipient = people.find(p => p.id === state.request?.personId) || person;
+  const selectedEvent = alumniEvents.find(event => event.id === eventPage.id) ?? aiLecture;
   const inside = appScreens.includes(screen);
   const contactPreview = typeof sheet === "object" ? sheet : null;
   const intent = state.intent;
@@ -96,10 +101,11 @@ export default function AlumniApp() {
   const self = { initials: state.profile.name.split(/\s+/).map(name => name[0]).slice(0, 2).join(""), color: "sage" };
   const replySent = state.messages.some(message => message.from === "you");
 
-  const go = useCallback((next: Screen, message?: string) => {
+  const go = useCallback((next: Screen, message?: string, event?: EventPage) => {
     setSheet(null);
     setConfirmation(message ? { screen: next, message } : null);
-    window.history.pushState({ screen: next }, "", `#${next}`);
+    if (event) setEventPage(event);
+    window.history.pushState({ screen: next, event }, "", event ? `#event/${event.id}` : `#${next}`);
     setScreen(next);
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
@@ -108,6 +114,7 @@ export default function AlumniApp() {
     const onBack = (event: PopStateEvent) => {
       setSheet(null);
       setConfirmation(null);
+      if (event.state?.screen === "event") setEventPage(event.state.event ?? defaultEventPage);
       setScreen(event.state?.screen || "welcome");
       window.scrollTo({ top: 0, behavior: "instant" });
     };
@@ -161,6 +168,9 @@ export default function AlumniApp() {
     </>;
   }
   function openPerson(p: Person) { setPersonId(p.id); go("profile"); }
+  function openEvent(event: AlumniEvent, from: EventPage["from"]) {
+    go("event", undefined, { id: event.id, from });
+  }
   function compose(p: Person) {
     if (request) { go("request"); return; }
     if (!intent) { go("create"); return; }
@@ -288,9 +298,121 @@ export default function AlumniApp() {
       {intent?.status === "active" && <button className="intent-context" onClick={() => go("intent")}><Layers3 size={19} aria-hidden="true" /><span><span>Finding help with</span><strong>{intent.title}</strong></span><ChevronRight size={17} aria-hidden="true" /></button>}
       <div className="search-field"><Search size={20} aria-hidden="true" /><input type="search" aria-label="Search alumni" placeholder="Name, role or expertise" value={search} onChange={e => setSearch(e.target.value)} />{search && <button type="button" aria-label="Clear search" onClick={() => setSearch("")}><X size={17} /></button>}</div>
       <div className="filters"><Select aria-label="Filter by location" value={location} onChange={e => setLocation(e.target.value)}><option>All locations</option><option>Bengaluru</option><option>Gurgaon</option><option>Mumbai</option></Select><Select aria-label="Filter by expertise" value={expertise} onChange={e => setExpertise(e.target.value)}><option>All expertise</option><option>Product &amp; startups</option><option>Engineering</option></Select></div>
+      <section aria-labelledby="distinguished-heading">
+        <div className="section-heading"><h2 id="distinguished-heading">Distinguished Alumni</h2></div>
+        <button className="distinguished-card person-identity" onClick={() => go("distinguished-profile")} aria-label={`View ${distinguishedAlumnus.name}'s profile`}>
+          <Avatar person={distinguishedAlumnus} />
+          <span><strong>{distinguishedAlumnus.name}</strong><span>{distinguishedAlumnus.role} · {distinguishedAlumnus.location}</span><span className="discovery-award">{distinguishedAlumnus.award.name} · {distinguishedAlumnus.award.year}</span></span>
+          <Award size={19} aria-hidden="true" /><ChevronRight size={17} aria-hidden="true" />
+        </button>
+      </section>
       <div className="section-heading"><h2>{search || location !== "All locations" || expertise !== "All expertise" ? "Search results" : "Open to helping"}</h2><span className="small muted" role="status">{filteredPeople.length} alumni</span></div>
       {filteredPeople.length ? filteredPeople.map(p => personCard(p)) : <Empty icon={<Search size={27} />} title="No alumni found" action={<Button variant="secondary" onClick={() => { setSearch(""); setLocation("All locations"); setExpertise("All expertise"); }}>Clear filters</Button>}>Try another name or broaden your filters.</Empty>}
     </>; break;
+
+    case "distinguished-profile": {
+      const { name, role, company, batch, degree, fieldOfStudy, location: city, award, milestones } = distinguishedAlumnus;
+      content = <>
+        <header className="alumni-profile-header">{back("people", "People")}<span>Alumni profile</span></header>
+        <div className="alumni-profile-content">
+          <div className="alumni-profile-identity">
+            <Avatar person={distinguishedAlumnus} size="large" />
+            <div>
+              <h1 ref={headingRef} tabIndex={-1}>{name}</h1>
+              <p>{role} · {company}</p>
+              <p className="distinguished-education">{degree} {batch}, {fieldOfStudy}</p>
+              <div className="meta"><span><MapPin size={15} aria-hidden="true" />{city}</span></div>
+            </div>
+          </div>
+          <section className="recognition-card">
+            <button className="recognition-badge" onClick={() => setSheet({ title: award.name, value: `${award.issuer} · ${award.year}. ${award.reason}` })}>
+              <Award size={17} aria-hidden="true" />Distinguished Alumni<ChevronRight size={15} aria-hidden="true" />
+            </button>
+            <h2>{award.name}</h2><p>{award.issuer} · {award.year}</p>
+            <small>Sample profile and recognition</small>
+          </section>
+          <section className="alumni-profile-section">
+            <h2>Milestones &amp; accomplishments</h2>
+            <ol className="milestone-list">
+              {milestones.map(({ title, detail }) => <li key={title}><h3>{title}</h3><p>{detail}</p></li>)}
+            </ol>
+          </section>
+          <section className="alumni-profile-section">
+            <h2>Upcoming lecture</h2>
+            <div className="event-host-preview"><CalendarDays size={20} aria-hidden="true" /><div><strong>{aiLecture.title}</strong><p>{aiLecture.duration} · {aiLecture.format}</p></div></div>
+          </section>
+        </div>
+        <footer className="alumni-profile-action">
+          <Button className="full-width" onClick={() => openEvent(aiLecture, "distinguished-profile")}>View lecture<ArrowRight size={18} aria-hidden="true" /></Button>
+        </footer>
+      </>;
+      break;
+    }
+
+    case "events": content = <>{title("Events", "Talks, panels, and meetups in your alumni network.")}
+      <button className="event-featured" onClick={() => openEvent(aiLecture, "events")}>
+        <span className="featured-host">
+          <Avatar person={distinguishedAlumnus} />
+          <span><strong>{aiLecture.host}</strong><small><Award size={14} aria-hidden="true" />Distinguished alum</small></span>
+        </span>
+        <span className="event-category">{aiLecture.category}</span>
+        <strong className="featured-event-title">{aiLecture.title}</strong>
+        <span className="event-card-date"><CalendarDays size={15} aria-hidden="true" /><span><time dateTime={aiLecture.date}>{eventDateLabel(aiLecture.date, "short")}</time> · {aiLecture.time}</span></span>
+        <span className="featured-event-action">
+          <span className="event-status">{state.registeredEventIds.includes(aiLecture.id) ? "Registered" : "Registration open"}</span>
+          <span>View details<ArrowRight size={17} aria-hidden="true" /></span>
+        </span>
+      </button>
+      <section aria-labelledby="other-events-heading">
+        <div className="section-heading"><h2 id="other-events-heading">Also coming up</h2></div>
+        <div className="event-list">
+          {alumniEvents.filter(event => event.id !== aiLecture.id).map(event => {
+            const { day, month } = eventDateBadge(event.date);
+            return <button key={event.id} className="event-card" onClick={() => openEvent(event, "events")}>
+              <span className="event-date-badge" aria-hidden="true"><strong>{day}</strong><small>{month}</small></span>
+              <span className="event-card-copy">
+                <span className="event-category">{event.category} · {event.format}</span>
+                <strong>{event.title}</strong>
+                <span className="event-category"><time dateTime={event.date}>{eventDateLabel(event.date, "short")}</time> · Registration opens soon</span>
+              </span>
+              <ChevronRight size={16} aria-hidden="true" />
+            </button>;
+          })}
+        </div>
+      </section>
+    </>; break;
+
+    case "event": {
+      const registered = state.registeredEventIds.includes(selectedEvent.id);
+      const hasDistinguishedHost = selectedEvent.id === aiLecture.id;
+      content = <>
+        <header className="alumni-profile-header">{back(eventPage.from, eventPage.from === "events" ? "Events" : "Alumni profile")}<span>Event details</span></header>
+        <div className="event-detail-content">
+          {title(selectedEvent.title, undefined, selectedEvent.category)}
+          <section className="event-host-card" aria-label="Hosted by">
+            <span>Hosted by</span>
+            <div className="event-host">
+              {hasDistinguishedHost ? <Avatar person={distinguishedAlumnus} /> : <span className="event-host-icon"><CalendarDays size={21} aria-hidden="true" /></span>}
+              <div><strong>{selectedEvent.host}</strong>{hasDistinguishedHost && <span>{distinguishedAlumnus.role}, {distinguishedAlumnus.company} · Class of {distinguishedAlumnus.batch}</span>}</div>
+              {hasDistinguishedHost && <Award className="event-host-award" size={18} role="img" aria-label="Distinguished alum" />}
+            </div>
+          </section>
+          <dl className="event-facts" aria-label="Schedule and format">
+            <div><dt><CalendarDays size={16} aria-hidden="true" /><span className="sr-only">Date</span></dt><dd><time dateTime={selectedEvent.date}>{eventDateLabel(selectedEvent.date, "full")}</time></dd></div>
+            <div><dt><Clock3 size={16} aria-hidden="true" /><span className="sr-only">Time and duration</span></dt><dd>{selectedEvent.time} · {selectedEvent.duration}</dd></div>
+            <div><dt>{selectedEvent.format.startsWith("Online") ? <Video size={16} aria-hidden="true" /> : <MapPin size={16} aria-hidden="true" />}<span className="sr-only">Format</span></dt><dd>{selectedEvent.format}</dd></div>
+          </dl>
+          <section className="detail-section"><h2>About this event</h2><p>{selectedEvent.description}</p></section>
+        </div>
+        <footer className="event-action">
+          <Button className="full-width" disabled={registered || !selectedEvent.registrationOpen} onClick={() => {
+            dispatch({ type: "register-event", eventId: selectedEvent.id });
+            setConfirmation({ screen: "event", message: "You’re registered for this lecture." });
+          }}>{registered ? "Registered" : selectedEvent.registrationOpen ? <>Register<ArrowRight size={17} aria-hidden="true" /></> : "Registration opens soon"}</Button>
+        </footer>
+      </>;
+      break;
+    }
 
     case "profile": {
       const contacts = [
@@ -477,13 +599,14 @@ export default function AlumniApp() {
     </>; break;
   }
 
-  const selectedTab = ["create", "intent", "intents"].includes(screen) ? "intents" : ["people", "profile"].includes(screen) ? "people" : ["compose", "requests", "request", "conversation", "outcome", "success", "received-request", "received-conversation"].includes(screen) ? "requests" : "home";
+  const isAlumniProfile = screen === "profile" || screen === "distinguished-profile";
+  const selectedTab = screen === "events" || screen === "event" ? "events" : ["create", "intent", "intents"].includes(screen) ? "intents" : screen === "people" || isAlumniProfile ? "people" : ["compose", "requests", "request", "conversation", "outcome", "success", "received-request", "received-conversation"].includes(screen) ? "requests" : "home";
   return <div className={`app-shell${inside ? " workspace-shell" : ""}`} data-screen={screen}>
     {inside && <header className="app-header">
       <button className="wordmark" onClick={() => go("home")} aria-label="Alumni home"><Layers3 size={23} strokeWidth={1.7} aria-hidden="true" />alumni<span className="wordmark-period">.</span></button>
       <button className="account-button" aria-label="Your profile" onClick={() => go("my-profile")}><Avatar person={self} size="small" /><span className="account-name">{firstName}</span></button>
     </header>}
-    <main id="main-content" className={screen === "welcome" ? "welcome-main" : screen === "profile" ? "alumni-profile" : "main-content"} key={screen}>{content}</main>
+    <main id="main-content" className={screen === "welcome" ? "welcome-main" : isAlumniProfile ? "alumni-profile" : screen === "event" ? "event-page" : "main-content"} key={screen}>{content}</main>
     <Sheet open={sheet !== null} title={contactPreview?.title ?? (sheet === "call-link" ? "Share a call link" : sheet === "decline" ? "Decline request" : "Suggest an alternative")} onClose={() => setSheet(null)}>
       {contactPreview ? <p className="alumni-contact-value">{contactPreview.value}</p> : sheet === "call-link" ? <form onSubmit={e => { e.preventDefault(); if (!isValidCallLink(callLink.trim())) return; dispatch({ type: "share-call-link", url: callLink, target: "sent" }); setSheet(null); setConfirmation({ screen: "conversation", message: "Call link shared in the conversation." }); }}>
         <Field label="Call link"><input type="url" required value={callLink} onChange={e => setCallLink(e.target.value)} /></Field>
@@ -495,7 +618,7 @@ export default function AlumniApp() {
         <div className="action-footer"><Button type="submit" disabled={!(sheet === "decline" ? declineMessage : alternativeMessage).trim()}>{sheet === "decline" ? "Send decline" : "Send recommendation"}</Button></div>
       </form>}
     </Sheet>
-    {inside && <nav className="bottom-nav" aria-label="Main navigation">{([{ name: "Home", id: "home", Icon: Home }, { name: "People", id: "people", Icon: Users }, { name: "Intents", id: "intents", Icon: Layers3 }, { name: "Requests", id: "requests", Icon: MessageCircle }] as const).map(({ name, id, Icon }) => <button key={id} aria-current={selectedTab === id ? "page" : undefined} onClick={() => go(id)} className={selectedTab === id ? "active" : ""}><span className="nav-icon"><Icon size={22} strokeWidth={selectedTab === id ? 2 : 1.65} />{id === "requests" && unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span><span>{name}</span></button>)}</nav>}
+    {inside && <nav className="bottom-nav" aria-label="Main navigation">{([{ name: "Home", id: "home", Icon: Home }, { name: "People", id: "people", Icon: Users }, { name: "Intents", id: "intents", Icon: Layers3 }, { name: "Requests", id: "requests", Icon: MessageCircle }, { name: "Events", id: "events", Icon: CalendarDays }] as const).map(({ name, id, Icon }) => <button key={id} aria-current={selectedTab === id ? "page" : undefined} onClick={() => go(id)} className={selectedTab === id ? "active" : ""}><span className="nav-icon"><Icon size={22} strokeWidth={selectedTab === id ? 2 : 1.65} />{id === "requests" && unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span><span>{name}</span></button>)}</nav>}
     <div className="sr-only" role="status" aria-atomic="true">{confirmationMessage}</div>
   </div>;
 }

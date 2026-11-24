@@ -205,7 +205,7 @@ input::placeholder, textarea::placeholder { color: #687a75; }
 .success-page .button { width: 100%; margin-top: 7px; }
 .summary-card { border: 1px solid var(--line); padding: 15px; border-radius: var(--card-radius); text-align: left; margin-bottom: 13px; background: var(--surface); }
 .summary-card > p { color: var(--muted); font-size: 13px; margin: 4px 0 11px; }
-.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%,var(--app-width)); min-height: calc(var(--nav-height) + env(safe-area-inset-bottom)); padding: 6px 9px calc(6px + env(safe-area-inset-bottom)); background: var(--surface); display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 3px; border-top: 1px solid var(--line); z-index: 30; }
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%,var(--app-width)); min-height: calc(var(--nav-height) + env(safe-area-inset-bottom)); padding: 6px 9px calc(6px + env(safe-area-inset-bottom)); background: var(--surface); display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 3px; border-top: 1px solid var(--line); z-index: 30; }
 .bottom-nav > button { min-height: 50px; border: 0; background: transparent; color: var(--muted); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px; font-size: 11px; font-weight: 650; border-radius: 11px; }
 .bottom-nav > button.active { background: var(--pale); color: var(--teal-dark); }
 .bottom-nav > button:hover { background: var(--soft); }
@@ -277,6 +277,114 @@ input::placeholder, textarea::placeholder { color: #687a75; }
 .alumni-profile-action { position: sticky; bottom: 0; z-index: 1; padding: 10px var(--profile-padding) max(13px, env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid var(--line); }
 .alumni-profile-action .button { position: relative; min-height: 45px; padding: 9px 30px; }
 .alumni-profile-action svg { position: absolute; right: 13px; }
+
+.distinguished-card.person-identity {
+  padding: 12px;
+  border: 1px solid #e9dbbf;
+  border-radius: var(--card-radius);
+  background: #fcf8ef;
+}
+.distinguished-card > svg { color: var(--amber); }
+.distinguished-card.person-identity:hover { border-color: #c5a979; }
+.distinguished-card .discovery-award { color: var(--amber); font-size: 12px; }
+.recognition-card { padding: 14px; border: 1px solid #e9dbbf; border-radius: var(--card-radius); background: #fcf8ef; }
+.recognition-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 5px 9px;
+  margin-bottom: 8px;
+  border: 1px solid #e7d9bd;
+  border-radius: 10px;
+  background: #f6ebd7;
+  color: var(--amber);
+  font-size: 12px;
+  font-weight: 700;
+}
+.recognition-badge:hover { background: #f1e1c5; }
+.recognition-card p, .event-host-preview p { color: var(--muted); font-size: 13px; }
+.recognition-card small { display: block; color: var(--muted); font-size: 11px; margin-top: 6px; }
+.alumni-profile-identity .distinguished-education { color: var(--teal-dark); font-weight: 650; }
+.milestone-list { list-style: none; margin: 11px 0 0 4px; padding: 0; }
+.milestone-list li { position: relative; border-left: 1px solid #e7d9bd; padding: 0 0 13px 14px; }
+.milestone-list li:last-child { border-color: transparent; padding-bottom: 0; }
+.milestone-list li::before { content: ""; position: absolute; left: -4px; top: 6px; width: 7px; height: 7px; border: 1px solid #b69257; border-radius: 50%; background: var(--warm); }
+.milestone-list h3 { font-size: 13px; font-weight: 700; color: var(--ink); }
+.milestone-list p { margin-top: 2px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.event-host-preview { display: flex; align-items: center; gap: 10px; background: var(--pale); border-radius: 10px; padding: 10px; margin-top: 7px; color: var(--teal-dark); }
+.event-host-preview strong { font-size: 14px; }
+
+.app-shell[data-screen="events"] .main-content, .event-page { background: #fbfaf5; }
+.app-shell[data-screen="events"] h1, .event-page h1, .featured-event-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  letter-spacing: -.035em;
+  color: var(--teal-dark);
+}
+.event-list { border-bottom: 1px solid var(--line); }
+.event-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  text-align: left;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+}
+.event-card:hover { background: var(--soft); }
+.event-card > svg { color: var(--teal); }
+.event-featured {
+  width: 100%;
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  text-align: left;
+  border: 1px solid #d9e1d6;
+  border-radius: var(--card-radius);
+  background: #f1f0e7;
+}
+.event-featured:hover { border-color: var(--teal); }
+.featured-host { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
+.featured-host strong { display: block; font-size: 15px; }
+.featured-host small { display: flex; align-items: center; gap: 4px; color: var(--amber); font-size: 12px; }
+.featured-event-title { display: block; font-size: clamp(24px, 5vw, 30px); line-height: 1.13; }
+.featured-event-action { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 7px; margin-top: 5px; padding-top: 9px; border-top: 1px solid #dce1d4; }
+.featured-event-action > span:last-child { display: flex; align-items: center; gap: 5px; color: var(--teal-dark); font-size: 12px; font-weight: 650; }
+.event-date-badge { flex: none; display: grid; place-content: center; text-align: center; width: 42px; min-height: 47px; line-height: 1.1; border: 1px solid var(--line); border-radius: 9px; background: #f3f4ec; color: var(--teal-dark); }
+.event-date-badge strong { font-size: 19px; }
+.event-date-badge small { font-size: 9px; font-weight: 700; text-transform: uppercase; padding-top: 2px; }
+.event-card-copy { flex: 1; display: grid; min-width: 0; gap: 3px; }
+.event-card-copy > strong { font-size: 14px; line-height: 1.35; }
+.event-category, .event-card-date { font-size: 12px; color: var(--muted); }
+.event-featured > .event-category { color: var(--teal); font-weight: 650; }
+.event-card-date { display: flex; align-items: center; gap: 6px; }
+.event-status { border-radius: 20px; padding: 3px 8px; background: #e4eddb; color: var(--teal-dark); font-size: 11px; font-weight: 650; }
+
+.event-page { --event-padding: var(--gutter); min-height: 100dvh; display: flex; flex-direction: column; animation: enter .24s ease-out; }
+.event-page .alumni-profile-header { --profile-padding: var(--event-padding); }
+.event-detail-content { flex: 1; padding: 16px var(--event-padding); }
+.event-detail-content .page-heading { margin-bottom: 12px; }
+.event-host-card { padding: 10px 12px; border: 1px solid #e9dfcb; border-radius: 12px; background: #f1eee2; }
+.event-host-card > span { display: block; color: var(--amber); font-size: 11px; font-weight: 700; margin-bottom: 5px; }
+.event-host { display: flex; align-items: center; gap: 10px; }
+.event-host > div { flex: 1; min-width: 0; }
+.event-host strong { font-size: 14px; }
+.event-host > div > span { display: block; color: var(--muted); font-size: 12px; }
+.event-host-award { color: var(--amber); }
+.event-host-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 12px; background: var(--pale); color: var(--teal-dark); flex: none; }
+.event-facts { display: grid; gap: 6px; margin: 10px 0 0; padding: 11px; border: 1px solid var(--line); border-radius: 10px; background: #f3f4ec; font-size: 13px; }
+.event-facts > div { display: flex; align-items: center; gap: 7px; }
+.event-facts dt { color: var(--teal-dark); }
+.event-facts dd { margin: 0; }
+.event-detail-content .detail-section { margin: 14px 0 0; }
+.event-detail-content .detail-section h2 { font-size: 15px; }
+.event-detail-content .detail-section p { margin-top: 5px; font-size: 14px; line-height: 1.55; }
+.event-action { position: sticky; bottom: 0; z-index: 1; padding: 9px var(--event-padding) max(11px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fbfaf5; }
+.event-action .button.primary:not(:disabled) { background: var(--teal-dark); }
+.event-action .button.primary:not(:disabled):hover { background: var(--teal); }
 
 .workspace-shell .main-content { min-height: calc(100dvh - var(--header-height)); padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 24px); }
 .avatar.portrait img { display: block; width: 100%; height: 100%; }
@@ -378,7 +486,7 @@ input::placeholder, textarea::placeholder { color: #687a75; }
   .welcome-visual { max-width: 231px; }
 }
 @media (width < 720px) {
-  .app-shell[data-screen="profile"] > :is(.app-header, .bottom-nav) { display: none; }
+  .app-shell:is([data-screen="profile"], [data-screen="distinguished-profile"], [data-screen="event"]) > :is(.app-header, .bottom-nav) { display: none; }
 }
 @media (min-width: 720px) {
   :root { --gutter: 28px; --header-height: 64px; }
@@ -398,6 +506,8 @@ input::placeholder, textarea::placeholder { color: #687a75; }
   .workspace-shell .main-content { grid-area: content; min-height: 0; min-width: 0; padding: 24px var(--workspace-gutter) 35px; }
   .workspace-shell .alumni-profile { --profile-padding: var(--workspace-gutter); grid-area: content; min-height: 0; min-width: 0; }
   .workspace-shell .alumni-profile-action { border-bottom-right-radius: 19px; }
+  .workspace-shell .event-page { --event-padding: var(--workspace-gutter); grid-area: content; min-height: 0; min-width: 0; border-bottom-right-radius: 19px; }
+  .workspace-shell .event-action { border-bottom-right-radius: 19px; }
   .account-name { display: inline; max-width: 15ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 8px; }
   .bottom-nav { grid-area: navigation; position: sticky; align-self: start; top: 20px; left: auto; bottom: auto; transform: none; width: 100%; min-height: 0; padding: 15px 11px; display: flex; flex-direction: column; gap: 5px; border: 0; background: transparent; }
   .bottom-nav > button { flex-direction: row; justify-content: flex-start; padding: 0 13px; gap: 10px; font-size: 13px; min-height: 44px; }

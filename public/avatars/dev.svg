@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Curls and hoodie"><title>Curls and hoodie</title>
+<defs><clipPath id="crop-05-curls-and-hoodie"><circle cx="64" cy="64" r="59"/></clipPath></defs>
+<circle cx="64" cy="64" r="59" fill="#dfd2ec"/>
+<g clip-path="url(#crop-05-curls-and-hoodie)">
+<g fill="none" stroke="#242320" stroke-linecap="round" stroke-linejoin="round">
+<g stroke-width="1.48"><path d="M41 60 C33 58 32 52 34 47 C29 42 31 35 37 33 C36 27 41 23 47 24 C49 18 55 17 60 20 C65 14 72 15 76 20 C83 17 89 21 91 27 C98 29 101 34 98 40 C104 47 98 55 91 57 L89 61"/>
+<path d="M41 59 C44 54 44 48 44 43 C49 46 55 43 58 39 C63 44 71 43 76 36 C80 42 86 42 88 47 L89 61"/>
+<path d="M41 60 C34 57 34 69 42 71 C45 81 54 89 64 89 C75 89 84 82 88 71 C96 70 97 60 90 60"/>
+<path d="M54 86 L53 94 M75 86 L77 94 M53 93 C42 94 37 99 41 106 C46 114 59 113 65 110 C76 114 88 110 89 102 C90 97 83 94 77 93"/>
+<path d="M48 98 Q64 108 82 98 M40 105 C27 108 17 114 12 123 M88 104 C101 108 112 115 118 123"/></g>
+<g stroke-width="1.13"><path d="M40 37 Q45 32 50 36 M52 28 Q56 24 61 27 M68 25 Q73 22 77 25 M82 31 Q87 28 91 34"/>
+<path d="M47 54 Q53 51 59 54 M72 53 Q78 51 83 54 M65 59 Q62 65 65 67 L68 66"/>
+<path d="M56 74 Q65 80 74 72 M59 77 Q65 84 70 76 M56 111 L53 124 M74 112 L77 124"/><circle cx="41" cy="73" r="2.4"/></g>
+</g>
+<g fill="#242320"><ellipse cx="54" cy="60" rx="1.55" ry="1.76"/><ellipse cx="77" cy="59" rx="1.55" ry="1.76"/></g>
+</g>
+</svg>

@@ -1,12 +1,29 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { demoReducer, demoReply, incomingScenario, initialState, sampleCallLink, sampleIntent, sampleOutcome } from "../src/lib/model";
+import { aiLecture, alumniEvents } from "../src/lib/events";
 
 const withIntent = () => demoReducer(initialState, { type: "publish", intent: sampleIntent });
 const withRequest = () => demoReducer(withIntent(), { type: "request", request: { personId: "aarav", message: "Could you share feedback on my startup idea?", commitment: "20-minute call" } });
 const accepted = () => demoReducer(withRequest(), { type: "accept" });
 const completed = () => demoReducer(accepted(), { type: "outcome", outcome: sampleOutcome });
 const received = () => demoReducer(completed(), { type: "introduce-incoming" });
+
+test("lecture registration survives a new intent journey and clears on restart", () => {
+  const action = { type: "register-event", eventId: aiLecture.id } as const;
+  const registered = demoReducer(completed(), action);
+  assert.deepEqual(registered.registeredEventIds, [aiLecture.id]);
+  assert.equal(demoReducer(registered, action), registered);
+  assert.deepEqual(demoReducer(registered, { type: "new-journey" }).registeredEventIds, [aiLecture.id]);
+  assert.deepEqual(demoReducer(registered, { type: "reset" }).registeredEventIds, []);
+});
+
+test("registration requires a listed event with registration open", () => {
+  const closed = alumniEvents.find(event => !event.registrationOpen);
+  assert.ok(closed);
+  assert.equal(demoReducer(initialState, { type: "register-event", eventId: closed.id }), initialState);
+  assert.equal(demoReducer(initialState, { type: "register-event", eventId: "unknown" }), initialState);
+});
 
 test("a request needs an active intent; duplicate submissions keep the original", () => {
   const action = { type: "request", request: { personId: "aarav", message: "A clear ask", commitment: "20-minute call" } } as const;
