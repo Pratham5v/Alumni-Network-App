@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, Award, BadgeCheck, BriefcaseBusiness, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, GraduationCap, Home, Layers3, Linkedin, LoaderCircle, MapPin, MessageCircle, Plus, RotateCcw, Search, Send, ShieldCheck, Sparkles, Users, Video, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BadgeCheck, BriefcaseBusiness, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, GraduationCap, Home, Layers3, Linkedin, LoaderCircle, MapPin, MessageCircle, Plus, RotateCcw, Search, Send, ShieldCheck, SlidersHorizontal, Sparkles, Users, Video, X } from "lucide-react";
 import { demoReducer, demoReply, incomingScenario, initialState, isValidCallLink, sampleCallLink, sampleIntent, sampleOutcome, sampleProfile, type Commitment, type Intent, type Message, type Outcome, type Profile } from "@/lib/model";
-import { people, type Person } from "@/lib/people";
+import { people, relevanceToIntent, type Person } from "@/lib/people";
 import { googleCalendarUrl, interviewTimeLabel } from "@/lib/calendar";
 import { aiLecture, alumniEvents, distinguishedAlumnus, eventDateBadge, eventDateLabel, type AlumniEvent } from "@/lib/events";
 
@@ -14,6 +14,7 @@ type IntentForm = Omit<Intent, "status">;
 type ContactPreview = { title: string; value: string };
 type EventPage = { id: string; from: "events" | "distinguished-profile" };
 const defaultEventPage: EventPage = { id: aiLecture.id, from: "events" };
+const alumniBatches = [...new Set([...people, distinguishedAlumnus].map(alumnus => alumnus.batch))].sort((a, b) => Number(b) - Number(a));
 const riya = { id: "riya", initials: "RS", color: "sage" };
 
 function Button({ children, variant = "primary", busy, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "quiet"; busy?: boolean }) {
@@ -74,6 +75,10 @@ export default function AlumniApp() {
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("All locations");
   const [expertise, setExpertise] = useState("All expertise");
+  const [batchFilter, setBatchFilter] = useState("");
+  const [distinguishedOnly, setDistinguishedOnly] = useState(false);
+  const [matchToIntent, setMatchToIntent] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
   const [commitment, setCommitment] = useState<Commitment>("20-minute call");
   const [outcome, setOutcome] = useState<Partial<Outcome>>(sampleOutcome);
@@ -93,6 +98,8 @@ export default function AlumniApp() {
   const inside = appScreens.includes(screen);
   const contactPreview = typeof sheet === "object" ? sheet : null;
   const intent = state.intent;
+  const activeIntent = intent?.status === "active" ? intent : null;
+  const matchedIntent = matchToIntent ? activeIntent : null;
   const request = state.request;
   const incoming = state.incoming;
   const confirmationMessage = confirmation?.screen === screen ? confirmation.message : "";
@@ -101,11 +108,12 @@ export default function AlumniApp() {
   const self = { initials: state.profile.name.split(/\s+/).map(name => name[0]).slice(0, 2).join(""), color: "sage" };
   const replySent = state.messages.some(message => message.from === "you");
 
-  const go = useCallback((next: Screen, message?: string, event?: EventPage) => {
+  const go = useCallback((next: Screen, message?: string, event?: EventPage, match = false) => {
     setSheet(null);
     setConfirmation(message ? { screen: next, message } : null);
     if (event) setEventPage(event);
-    window.history.pushState({ screen: next, event }, "", event ? `#event/${event.id}` : `#${next}`);
+    setMatchToIntent(match);
+    window.history.pushState({ screen: next, event, match }, "", event ? `#event/${event.id}` : `#${next}`);
     setScreen(next);
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
@@ -115,6 +123,7 @@ export default function AlumniApp() {
       setSheet(null);
       setConfirmation(null);
       if (event.state?.screen === "event") setEventPage(event.state.event ?? defaultEventPage);
+      setMatchToIntent(event.state?.match === true);
       setScreen(event.state?.screen || "welcome");
       window.scrollTo({ top: 0, behavior: "instant" });
     };
@@ -155,8 +164,8 @@ export default function AlumniApp() {
       {confirmationMessage && <Confirmation message={confirmationMessage} />}
     </>;
   }
-  function back(to: Screen, text = "Back") {
-    return <button className="back-link" onClick={() => go(to)}><ArrowLeft size={19} />{text}</button>;
+  function back(to: Screen, text = "Back", match = false) {
+    return <button className="back-link" onClick={() => go(to, undefined, undefined, match)}><ArrowLeft size={19} />{text}</button>;
   }
   function setupHeading(step: 1 | 2, heading: string, description: string) {
     return <>
@@ -167,7 +176,12 @@ export default function AlumniApp() {
       {title(heading, description)}
     </>;
   }
-  function openPerson(p: Person) { setPersonId(p.id); go("profile"); }
+  function openPerson(p: Person) { setPersonId(p.id); go("profile", undefined, undefined, Boolean(matchedIntent)); }
+  function discoverForIntent() { go("people", undefined, undefined, true); }
+  function changeIntentMatch(match: boolean) {
+    setMatchToIntent(match);
+    window.history.replaceState({ ...window.history.state, match }, "");
+  }
   function openEvent(event: AlumniEvent, from: EventPage["from"]) {
     go("event", undefined, { id: event.id, from });
   }
@@ -182,9 +196,16 @@ export default function AlumniApp() {
   function freshIntent() {
     dispatch({ type: "new-journey" }); setIntentForm(sampleIntent); setOutcome(sampleOutcome); setRequestMessage(""); go("create");
   }
+  function clearDiscoveryFilters() {
+    setSearch("");
+    setLocation("All locations");
+    setExpertise("All expertise");
+    setBatchFilter("");
+    setDistinguishedOnly(false);
+  }
   function restart() {
     timers.current.forEach(clearTimeout); timers.current = [];
-    dispatch({ type: "reset" }); setBusy(false); setProfileForm(sampleProfile); setIntentForm(sampleIntent); setOutcome(sampleOutcome); setSearch(""); setLocation("All locations"); setExpertise("All expertise"); go("welcome");
+    dispatch({ type: "reset" }); setBusy(false); setProfileForm(sampleProfile); setIntentForm(sampleIntent); setOutcome(sampleOutcome); clearDiscoveryFilters(); setFiltersOpen(false); go("welcome");
   }
   function openReceived() { dispatch({ type: "read-incoming" }); go("received-request"); }
   function shareCallLink() { setCallLink(sampleCallLink); setSheet("call-link"); }
@@ -198,9 +219,9 @@ export default function AlumniApp() {
       <ChevronRight size={19} aria-hidden="true" />
     </button>;
   }
-  function personCard(p: Person, compact = false) {
-    const matched = (screen === "people" || screen === "intent") && intent?.status === "active" && p.id === "aarav";
-    return <article className={`person-card${matched ? " person-match" : ""}${compact ? " person-compact" : ""}`} key={p.id}>
+  function personCard(p: Person, compact = false, matched = false) {
+    const inDirectory = screen === "people";
+    return <article className={`person-card${matched ? " person-match" : ""}${compact ? " person-compact" : ""}${inDirectory ? " discovery-person" : ""}`} key={p.id}>
       {matched && <div className="match-tag"><Sparkles size={14} aria-hidden="true" />Closest match for your intent</div>}
       <button className="person-identity" onClick={() => openPerson(p)} aria-label={`View ${p.name}'s profile`}>
         <Avatar person={p} /><span><strong>{p.name}</strong><span>{p.role} · {p.location}</span></span><ChevronRight size={18} className="muted" aria-hidden="true" />
@@ -208,8 +229,12 @@ export default function AlumniApp() {
       {!compact && <>
         <p className="person-help">{p.help}</p>
         <div className="card-actions">
-          <div className="availability"><span className="availability-dot" />Open to helping<span className="person-commitment"><Clock3 size={13} aria-hidden="true" />{p.commitment}</span></div>
-          <Button variant={matched ? "primary" : "secondary"} onClick={() => compose(p)}>{request ? "View request" : intent ? "Request help" : "Create an intent"}</Button>
+          <div className="availability">
+            <span><span className="availability-dot" />Open to helping</span>
+            <span aria-hidden="true">·</span>
+            <span>{p.commitment}</span>
+          </div>
+          {!inDirectory && (intent || request) && <Button variant="secondary" onClick={() => compose(p)}>{request ? "View request" : "Request help"}</Button>}
         </div>
       </>}
     </article>;
@@ -219,10 +244,25 @@ export default function AlumniApp() {
     return <button className="intent-card" onClick={() => go("intent")}><div className="row between"><Tag><span className="availability-dot" />{intent.status === "resolved" ? "Resolved" : "Active intent"}</Tag><ChevronRight size={19} aria-hidden="true" /></div><h2>{intent.title}</h2><p>{intent.context}</p><div className="meta"><Clock3 size={15} aria-hidden="true" />{intent.commitment}<span>·</span>{intent.status === "active" ? `${intent.expires} days` : "Closed with feedback"}</div></button>;
   }
 
+  const searchTerm = search.toLowerCase().trim();
+  const showingDistinguishedOnly = !matchedIntent && distinguishedOnly;
   const filteredPeople = people.filter(p => {
     const words = `${p.name} ${p.role} ${p.expertise.join(" ")} ${p.help}`.toLowerCase();
-    return words.includes(search.toLowerCase().trim()) && (location === "All locations" || p.location === location) && (expertise === "All expertise" || (expertise === "Product & startups" ? p.id !== "kabir" : p.id === "kabir"));
+    return !showingDistinguishedOnly && words.includes(searchTerm) && (!batchFilter || p.batch === batchFilter)
+      && (location === "All locations" || p.location === location)
+      && (expertise === "All expertise" || (expertise === "Product & startups" ? p.id !== "kabir" : p.id === "kabir"));
   });
+  const discoveryResults = filteredPeople.map(person => ({ person, relevance: matchedIntent ? relevanceToIntent(person, matchedIntent) : 0 }))
+    .sort((a, b) => b.relevance - a.relevance);
+  const intentSuggestions = activeIntent ? people.map(person => ({ person, relevance: relevanceToIntent(person, activeIntent) }))
+    .sort((a, b) => b.relevance - a.relevance) : [];
+  const suggestedAlumnus = intentSuggestions[0];
+  const showDistinguished = !matchedIntent && (location === "All locations" || location === distinguishedAlumnus.location)
+    && (expertise === "All expertise" || expertise === "Engineering")
+    && (!batchFilter || distinguishedAlumnus.batch === batchFilter)
+    && `${distinguishedAlumnus.name} ${distinguishedAlumnus.role} ${distinguishedAlumnus.expertise} distinguished alumni`.toLowerCase().includes(searchTerm);
+  const activeFilterCount = Number(location !== "All locations") + Number(expertise !== "All expertise") + Number(Boolean(batchFilter)) + Number(showingDistinguishedOnly);
+  const hasDiscoveryFilters = Boolean(searchTerm || activeFilterCount);
   let content: ReactNode;
 
   switch (screen) {
@@ -289,25 +329,56 @@ export default function AlumniApp() {
         <h2>What I need</h2><p>{intent.context}</p>
         <div className="meta"><span><Clock3 size={15} aria-hidden="true" />{intent.commitment}</span><span>{intent.status === "active" ? `Expires in ${intent.expires} days` : "Outcome recorded"}</span></div>
       </section>
+      {!request && <div className="action-footer">
+        <Button onClick={discoverForIntent}>Discover alumni<ArrowRight size={17} aria-hidden="true" /></Button>
+        <Button variant="quiet" onClick={() => { setIntentForm(intent); go("create"); }}>Edit intent</Button>
+      </div>}
       <div className="section-heading"><h2>Alumni who may help</h2></div>
-      {personCard(people[0])}
-      <div className="action-footer">{request ? <Button onClick={() => go("request")}>View request</Button> : <><Button onClick={() => go("people")}>Discover alumni<ArrowRight size={17} aria-hidden="true" /></Button><Button variant="quiet" onClick={() => { setIntentForm(intent); go("create"); }}>Edit intent</Button></>}</div>
+      {personCard(suggestedAlumnus?.person ?? people[0], false, Boolean(suggestedAlumnus?.relevance))}
+      {request && <div className="action-footer"><Button onClick={() => go("request")}>View request</Button></div>}
     </> : <Empty icon={<Layers3 size={27} />} title="Create your first intent" action={<Button onClick={() => go("create")}>Create an intent</Button>}>Tell your community what would help right now.</Empty>; break;
 
     case "people": content = <>{title("Discover alumni", "Find someone with the experience you need.")}
-      {intent?.status === "active" && <button className="intent-context" onClick={() => go("intent")}><Layers3 size={19} aria-hidden="true" /><span><span>Finding help with</span><strong>{intent.title}</strong></span><ChevronRight size={17} aria-hidden="true" /></button>}
-      <div className="search-field"><Search size={20} aria-hidden="true" /><input type="search" aria-label="Search alumni" placeholder="Name, role or expertise" value={search} onChange={e => setSearch(e.target.value)} />{search && <button type="button" aria-label="Clear search" onClick={() => setSearch("")}><X size={17} /></button>}</div>
-      <div className="filters"><Select aria-label="Filter by location" value={location} onChange={e => setLocation(e.target.value)}><option>All locations</option><option>Bengaluru</option><option>Gurgaon</option><option>Mumbai</option></Select><Select aria-label="Filter by expertise" value={expertise} onChange={e => setExpertise(e.target.value)}><option>All expertise</option><option>Product &amp; startups</option><option>Engineering</option></Select></div>
-      <section aria-labelledby="distinguished-heading">
+      {activeIntent && <label className="discovery-intent">
+        <span><Layers3 size={15} aria-hidden="true" />Match to intent</span>
+        <Select value={matchedIntent ? "active" : "all"} onChange={e => changeIntentMatch(e.target.value === "active")}>
+          <option value="all">Browse all alumni</option>
+          <option value="active">{activeIntent.title}</option>
+        </Select>
+      </label>}
+      <div className="discovery-search">
+        <div className="search-field"><Search size={20} aria-hidden="true" /><input type="search" aria-label="Search alumni" placeholder="Name, role or expertise" value={search} onChange={e => setSearch(e.target.value)} />{search && <button type="button" aria-label="Clear search" onClick={() => setSearch("")}><X size={17} /></button>}</div>
+        <button type="button" className="filter-toggle" aria-expanded={filtersOpen} aria-controls="discovery-filters" onClick={() => setFiltersOpen(open => !open)}><SlidersHorizontal size={16} aria-hidden="true" />Filters{activeFilterCount > 0 && <span>{activeFilterCount}</span>}</button>
+      </div>
+      <div id="discovery-filters" className="discovery-filters" role="group" aria-labelledby="filter-label" hidden={!filtersOpen}>
+        <div className="filter-heading">
+          <span id="filter-label">Filters</span>
+          {hasDiscoveryFilters && <button type="button" className="text-button" onClick={clearDiscoveryFilters}>Clear filters</button>}
+        </div>
+        <div className="filters">
+          <Select aria-label="Filter by location" className={location !== "All locations" ? "filter-active" : undefined} value={location} onChange={e => setLocation(e.target.value)}><option>All locations</option><option>Bengaluru</option><option>Gurgaon</option><option>Mumbai</option></Select>
+          <Select aria-label="Filter by expertise" className={expertise !== "All expertise" ? "filter-active" : undefined} value={expertise} onChange={e => setExpertise(e.target.value)}><option>All expertise</option><option>Product &amp; startups</option><option>Engineering</option></Select>
+          <Select aria-label="Filter by graduation batch" className={batchFilter ? "filter-active" : undefined} value={batchFilter} onChange={e => setBatchFilter(e.target.value)}>
+            <option value="">All batches</option>{alumniBatches.map(batch => <option key={batch} value={batch}>Class of {batch}</option>)}
+          </Select>
+          {!matchedIntent && <button type="button" className="distinguished-filter" aria-pressed={distinguishedOnly} onClick={() => setDistinguishedOnly(value => !value)}>
+            {distinguishedOnly ? <Check size={16} aria-hidden="true" /> : <Award size={16} aria-hidden="true" />}Distinguished only
+          </button>}
+        </div>
+      </div>
+      {showDistinguished && <section aria-labelledby="distinguished-heading">
         <div className="section-heading"><h2 id="distinguished-heading">Distinguished Alumni</h2></div>
         <button className="distinguished-card person-identity" onClick={() => go("distinguished-profile")} aria-label={`View ${distinguishedAlumnus.name}'s profile`}>
           <Avatar person={distinguishedAlumnus} />
           <span><strong>{distinguishedAlumnus.name}</strong><span>{distinguishedAlumnus.role} · {distinguishedAlumnus.location}</span><span className="discovery-award">{distinguishedAlumnus.award.name} · {distinguishedAlumnus.award.year}</span></span>
           <Award size={19} aria-hidden="true" /><ChevronRight size={17} aria-hidden="true" />
         </button>
-      </section>
-      <div className="section-heading"><h2>{search || location !== "All locations" || expertise !== "All expertise" ? "Search results" : "Open to helping"}</h2><span className="small muted" role="status">{filteredPeople.length} alumni</span></div>
-      {filteredPeople.length ? filteredPeople.map(p => personCard(p)) : <Empty icon={<Search size={27} />} title="No alumni found" action={<Button variant="secondary" onClick={() => { setSearch(""); setLocation("All locations"); setExpertise("All expertise"); }}>Clear filters</Button>}>Try another name or broaden your filters.</Empty>}
+      </section>}
+      {filteredPeople.length > 0 && <>
+        <div className="section-heading"><h2>{matchedIntent ? "Recommended alumni" : hasDiscoveryFilters ? "Search results" : "Open to helping"}</h2><span className="small muted" role="status">{filteredPeople.length} alumni</span></div>
+        <div className="discovery-results">{discoveryResults.map(({ person, relevance }, index) => personCard(person, false, index === 0 && relevance > 0))}</div>
+      </>}
+      {!filteredPeople.length && !showDistinguished && <Empty icon={<Search size={27} />} title="No alumni found">Try another name or broaden your filters.</Empty>}
     </>; break;
 
     case "distinguished-profile": {
@@ -424,7 +495,7 @@ export default function AlumniApp() {
         { label: "Portfolio", title: "Sample portfolio", value: `${person.id}.example.com`, icon: <BriefcaseBusiness size={19} aria-hidden="true" /> },
       ];
       content = <>
-        <header className="alumni-profile-header">{back("people", "People")}<span>Alumni profile</span></header>
+        <header className="alumni-profile-header">{back("people", "People", Boolean(matchedIntent))}<span>Alumni profile</span></header>
         <div className="alumni-profile-content">
           <div className="alumni-profile-identity">
             <Avatar person={person} size="large" />

@@ -5,6 +5,25 @@ export type Person = {
   communities: string[];
   currentIntents?: { title: string; status: string }[];
 };
+
+function matchWords(value: string) {
+  return new Set((value.toLowerCase().match(/\p{L}{4,}/gu) ?? []).map(word => word.replace(/s$/, "")));
+}
+
+// The demo ranks by shared words in a published intent and each alumnus's offer.
+export function relevanceToIntent(person: Person, intent: { title: string; context: string }) {
+  const expertise = matchWords(`${person.role} ${person.expertise.join(" ")}`);
+  const help = matchWords(person.help);
+  const title = matchWords(intent.title);
+  const context = matchWords(intent.context);
+  let score = 0;
+  for (const word of new Set([...title, ...context])) {
+    const weight = Number(expertise.has(word)) * 2 + Number(help.has(word));
+    score += weight * (title.has(word) ? 3 : 1);
+  }
+  return score;
+}
+
 export const people: Person[] = [
   {
     id: "aarav", name: "Aarav Shah", role: "Product Manager", company: "Product studio", location: "Bengaluru", batch: "2018", initials: "AS", color: "sage",
