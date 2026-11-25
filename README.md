@@ -18,8 +18,8 @@ Open [127.0.0.1:3000](http://127.0.0.1:3000/) or use the address printed by Next
 ## Try the walkthrough
 
 1. Select **Explore the walkthrough**. Review the editable sample details for Prathmesh Mehrotra, class of 2026, and continue through simulated verification.
-2. Create and publish the prefilled startup-feedback intent. Open **Discover alumni** to browse profiles, search, or filter by location and expertise. Aarav Shah’s profile brings his availability, expertise, current intent, and communities into view.
-3. Use **Request help** to review the prefilled message and time commitment. Send it, choose **Preview acceptance**, and open the conversation.
+2. Create and publish the prefilled startup-feedback intent. Open **Discover alumni** and find Aarav Shah’s matched card. His name and portrait open his full profile.
+3. Choose **Request help** on the matched card to review the prefilled message and time commitment. Send it to see Aarav’s simulated acceptance, then select **Open conversation**.
 4. Send the fixed walkthrough reply. After Aarav confirms the time, share the sample call link. **Add to Google Calendar** opens a prefilled event for review and manual saving.
 5. Select **Record the outcome**. **Not yet** keeps the request open. If the conversation happened, you can finish the request and choose whether the intent stays active.
 6. Return Home to find Riya’s incoming AI interview-preparation request. Accept it to send the prefilled reply and receive a sample call link, decline it with an editable response, or suggest Kabir Mehta as an alternative.

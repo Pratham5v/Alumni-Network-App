@@ -22,7 +22,8 @@ const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "
 type IntentForm = Omit<Intent, "status">;
 type ContactPreview = { title: string; value: string };
 type EventPage = { id: string; from: "events" | "distinguished-profile" };
-type NavigationTarget = EventPage | { campaignId: string } | { directoryId: string };
+type ComposeFrom = "people" | "profile";
+type NavigationTarget = EventPage | { campaignId: string } | { directoryId: string } | { composeFrom: ComposeFrom };
 const defaultEventPage: EventPage = { id: aiLecture.id, from: "events" };
 const defaultJobFilters: JobFilters = { query: "", workMode: "", savedOnly: false };
 const defaultCommunityFilters: CommunityFilters = { query: "", mine: false };
@@ -153,6 +154,7 @@ export default function AlumniApp() {
   const [matchToIntent, setMatchToIntent] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
+  const [composeFrom, setComposeFrom] = useState<ComposeFrom>("profile");
   const [commitment, setCommitment] = useState<Commitment>("20-minute call");
   const [outcome, setOutcome] = useState<Partial<Outcome>>(sampleOutcome);
   const [sheet, setSheet] = useState<"call-link" | "decline" | "alternative" | "attendees" | "demo-google" | ContactPreview | null>(null);
@@ -199,12 +201,14 @@ export default function AlumniApp() {
     const event = target && "from" in target ? target : undefined;
     const campaign = target && "campaignId" in target ? target.campaignId : undefined;
     const directory = target && "directoryId" in target ? target.directoryId : undefined;
+    const composeFrom = target && "composeFrom" in target ? target.composeFrom : undefined;
     if (event) setEventPage(event);
     if (campaign) setCampaignId(campaign);
     if (directory) setDirectoryId(directory);
+    if (composeFrom) setComposeFrom(composeFrom);
     setMatchToIntent(match);
     const recordId = event?.id ?? campaign ?? directory;
-    window.history.pushState({ screen: next, event, campaign, directory, match }, "", recordId ? `#${next}/${recordId}` : `#${next}`);
+    window.history.pushState({ screen: next, event, campaign, directory, composeFrom, match }, "", recordId ? `#${next}/${recordId}` : `#${next}`);
     setScreen(next);
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
@@ -216,6 +220,7 @@ export default function AlumniApp() {
       if (event.state?.screen === "event") setEventPage(event.state.event ?? defaultEventPage);
       if (event.state?.screen === "campaign") setCampaignId(event.state.campaign ?? null);
       if (event.state?.screen === "job" || event.state?.screen === "community") setDirectoryId(event.state.directory ?? null);
+      if (event.state?.screen === "compose") setComposeFrom(event.state.composeFrom === "people" ? "people" : "profile");
       setMatchToIntent(event.state?.match === true);
       setScreen(event.state?.screen || "welcome");
       window.scrollTo({ top: 0, behavior: "instant" });
@@ -305,13 +310,13 @@ export default function AlumniApp() {
       go("onboard");
     }
   }
-  function compose(p: Person) {
+  function compose(p: Person, from: ComposeFrom = "profile") {
     if (request) { go("request"); return; }
     if (!intent) { go("create"); return; }
     setPersonId(p.id);
     setCommitment(intent.commitment === "Chat" ? "Chat" : p.commitment);
     setRequestMessage(`Hi ${p.name.split(" ")[0]},\n\n${intent.context}`);
-    go("compose");
+    go("compose", undefined, { composeFrom: from }, Boolean(matchedIntent));
   }
   function freshIntent() {
     dispatch({ type: "new-journey" }); setIntentForm(sampleIntent); setOutcome(sampleOutcome); setRequestMessage(""); go("create");
@@ -372,17 +377,22 @@ export default function AlumniApp() {
     </article>;
   }
   function discoveryPerson(person: Person, matched: boolean) {
-    return <button key={person.id} type="button" className={`discovery-person${matched ? " person-match" : ""}`} onClick={() => openPerson(person)} aria-label={`View ${person.name}'s profile`}>
-      <Avatar person={person} />
-      <span className="discovery-person-content">
-        {matched && <span className="match-tag"><Sparkles size={14} aria-hidden="true" />Closest match for your intent</span>}
-        <strong>{person.name}</strong>
-        <span className="discovery-person-meta">{person.role} · {person.location}</span>
-        <span className="discovery-person-help">{person.help}</span>
-        <span className="discovery-commitment"><Clock3 size={13} aria-hidden="true" />{person.commitment}</span>
-      </span>
-      <ChevronRight size={18} aria-hidden="true" />
-    </button>;
+    return <article key={person.id} className={`discovery-person${matched ? " person-match" : ""}`}>
+      <button type="button" className="discovery-person-profile" onClick={() => openPerson(person)} aria-label={`View ${person.name}'s profile`}>
+        <Avatar person={person} />
+        <span className="discovery-person-content">
+          {matched && <span className="match-tag"><Sparkles size={14} aria-hidden="true" />Closest match for your intent</span>}
+          <strong>{person.name}</strong>
+          <span className="discovery-person-meta">{person.role} · {person.location}</span>
+          <span className="discovery-person-help">{person.help}</span>
+          <span className="discovery-commitment"><Clock3 size={13} aria-hidden="true" />{person.commitment}</span>
+        </span>
+        <ChevronRight size={18} aria-hidden="true" />
+      </button>
+      {matched && (!request || request.personId === person.id) && <Button type="button" className="discovery-request-action" onClick={() => compose(person, "people")}>
+        {request ? "View request" : "Request help"}<ArrowRight size={16} aria-hidden="true" />
+      </Button>}
+    </article>;
   }
   function intentCard(withOutcome = false) {
     if (!intent) return null;
@@ -843,19 +853,29 @@ export default function AlumniApp() {
       break;
     }
 
-    case "compose": content = intent ? <>
-      {back("profile", "Alumni profile")}{title("Send a request", "Let them know what you’d like help with and how much time you’re asking for.")}
-      <div className="recipient-card">
-        <div className="profile-summary"><Avatar person={person} /><div><span>To</span><strong>{person.name}</strong><p>{person.role} · {person.location}</p></div></div>
-        <div className="recipient-intent"><Layers3 size={17} aria-hidden="true" /><div><span>Your intent</span><strong>{intent.title}</strong></div></div>
-      </div>
-      <form className="form-card" onSubmit={e => { e.preventDefault(); delayed(() => { dispatch({ type: "request", request: { personId: person.id, message: requestMessage.trim(), commitment } }); go("request", `Delivered to ${person.name}`); }); }}>
-        <Field label="Your message" hint="Share the context and what you’d like their perspective on."><textarea required minLength={15} maxLength={600} rows={5} value={requestMessage} onChange={e => setRequestMessage(e.target.value)} /></Field>
-        <Field label="Requested commitment"><Select value={commitment} onChange={e => setCommitment(e.target.value as Commitment)}><option>{person.commitment}</option><option>Chat</option></Select></Field>
-        <p className="quiet-note"><ShieldCheck size={16} aria-hidden="true" />Only this alumnus receives your request.</p>
-        <div className="action-footer"><Button type="submit" busy={busy} disabled={requestMessage.trim().length < 15}>Send request<Send size={17} aria-hidden="true" /></Button><Button variant="quiet" type="button" onClick={() => go("profile")}>Cancel</Button></div>
-      </form>
-    </> : <Empty icon={<Layers3 size={27} />} title="Start with an intent" action={<Button onClick={() => go("create")}>Create an intent</Button>}>A request needs a little context about what you need.</Empty>; break;
+    case "compose": content = <>
+      {back(composeFrom, composeFrom === "people" ? "People" : "Alumni profile", Boolean(matchedIntent))}
+      {request ? <>{title("Request already sent")}<Button onClick={() => go("request")}>View request<ArrowRight size={17} aria-hidden="true" /></Button></> : activeIntent ? <>
+        {title("Send a request", "Let them know what you’d like help with and how much time you’re asking for.")}
+        <div className="recipient-card">
+          <div className="profile-summary"><Avatar person={person} /><div><span>To</span><strong>{person.name}</strong><p>{person.role} · {person.location}</p></div></div>
+          <div className="recipient-intent"><Layers3 size={17} aria-hidden="true" /><div><span>Your intent</span><strong>{activeIntent.title}</strong></div></div>
+        </div>
+        <form className="form-card" onSubmit={event => {
+          event.preventDefault();
+          const message = requestMessage.trim();
+          if (message.length < 15) return;
+          dispatch({ type: "request", request: { personId: person.id, message, commitment } });
+          dispatch({ type: "accept" });
+          go("request");
+        }}>
+          <Field label="Your message" hint="Share the context and what you’d like their perspective on."><textarea required minLength={15} maxLength={600} rows={5} value={requestMessage} onChange={e => setRequestMessage(e.target.value)} /></Field>
+          <Field label="Requested commitment"><Select value={commitment} onChange={e => setCommitment(e.target.value as Commitment)}><option>{person.commitment}</option><option>Chat</option></Select></Field>
+          <p className="quiet-note"><ShieldCheck size={16} aria-hidden="true" />Only this alumnus receives your request.</p>
+          <div className="action-footer"><Button type="submit" disabled={requestMessage.trim().length < 15}>Send request<Send size={17} aria-hidden="true" /></Button><Button variant="quiet" type="button" onClick={() => go(composeFrom, undefined, undefined, Boolean(matchedIntent))}>Cancel</Button></div>
+        </form>
+      </> : <Empty icon={<Layers3 size={27} />} title="Start with an intent" action={<Button onClick={() => go("create")}>Create an intent</Button>}>A request needs a little context about what you need.</Empty>}
+    </>; break;
 
     case "requests": content = <>{title("Your requests", "Keep track of the help you’ve asked for and the requests you’ve received.")}
       {incoming && <section><div className="section-heading"><h2>Received</h2></div>{incomingRequestCard()}</section>}
@@ -877,20 +897,17 @@ export default function AlumniApp() {
     </>; break;
 
     case "request": content = request ? <>
-      {back("requests", "Requests")}{title(request.status === "pending" ? "Request sent" : request.status === "accepted" ? "You’re connected." : "Interaction completed", undefined, "Sent request")}
+      {back("requests", "Requests")}{title(request.status === "pending" ? "Request sent" : request.status === "accepted" ? "Request accepted" : "Interaction completed", undefined, "Sent request")}
       <article className="request-detail-card">
         <div className="profile-summary"><Avatar person={recipient} /><div><strong>{recipient.name}</strong><p>{recipient.role}</p></div></div>
         <h2>{request.intentTitle}</h2><p className="preserve-lines">{request.message}</p>
         <div className="meta"><Clock3 size={16} aria-hidden="true" />{request.commitment}</div>
       </article>
       <ol className="request-progress">
-        {(request.status !== "pending" || !confirmationMessage) && <li className="status-line"><span className="status-check"><Check size={15} aria-hidden="true" /></span><div><strong>Request delivered</strong><p>Context and time commitment shared.</p></div></li>}
+        <li className="status-line"><span className="status-check"><Check size={15} aria-hidden="true" /></span><div><strong>Request delivered</strong><p>Context and time commitment shared.</p></div></li>
         <li className="status-line"><span className={request.status === "pending" ? "status-check status-waiting" : "status-check"}>{request.status === "pending" ? <Clock3 size={15} aria-hidden="true" /> : <Check size={15} aria-hidden="true" />}</span><div><strong>{request.status === "pending" ? "Awaiting response" : `${recipient.name.split(" ")[0]} accepted`}</strong><p>{request.status === "pending" ? "Once accepted, you can arrange a time together." : "You can arrange the interaction in your conversation."}</p></div></li>
       </ol>
-      {request.status === "pending" ? <div className="demo-control">
-        <span className="eyebrow">Walkthrough</span><p>See what happens when {recipient.name.split(" ")[0]} accepts.</p>
-        <Button variant="secondary" busy={busy} onClick={() => delayed(() => { dispatch({ type: "accept" }); setConfirmation({ screen: "request", message: `${recipient.name.split(" ")[0]} accepted your request.` }); })}>Preview acceptance<ArrowRight size={17} aria-hidden="true" /></Button>
-      </div> : <div className="action-footer"><Button onClick={() => go(request.status === "completed" ? "success" : "conversation")}>{request.status === "completed" ? "View outcome" : "Open conversation"}<ArrowRight size={17} aria-hidden="true" /></Button></div>}
+      {request.status !== "pending" && <div className="action-footer"><Button onClick={() => go(request.status === "completed" ? "success" : "conversation")}>{request.status === "completed" ? "View outcome" : "Open conversation"}<ArrowRight size={17} aria-hidden="true" /></Button></div>}
     </> : <Empty icon={<MessageCircle size={27} />} title="No request yet" action={<Button onClick={() => go("people")}>Discover alumni</Button>}>Your next conversation starts with a clear ask.</Empty>; break;
 
     case "received-request": content = incoming ? <>
