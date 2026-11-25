@@ -1,5 +1,6 @@
 import { tomorrowInterview, type InterviewMeeting } from "./calendar";
 import { initialInstitutionState, institutionReducer, publicInstitutionEvents, type InstitutionAction, type InstitutionState } from "./institution";
+import { jobs } from "./jobs";
 
 export type Profile = { name: string; batch: string; role: string; location: string };
 export type Commitment = "20-minute call" | "30-minute call" | "Chat";
@@ -60,6 +61,8 @@ export type DemoState = {
   callLink: string | null;
   incoming: IncomingRequest | null;
   registeredEventIds: string[];
+  savedJobIds: string[];
+  referralRequests: Record<string, string>;
   institution: InstitutionState;
 };
 export const sampleProfile: Profile = { name: "Prathmesh Mehrotra", batch: "2026", role: "Software Engineer", location: "Gurgaon" };
@@ -102,7 +105,7 @@ export const sampleIntent: Omit<Intent, "status"> = {
   commitment: "20-minute call",
   expires: "14",
 };
-export const initialState: DemoState = { profile: sampleProfile, profileDetails: sampleProfileDetails, profilePreferences: sampleProfilePreferences, intent: null, request: null, messages: [], conversationConfirmed: false, meeting: null, callLink: null, incoming: null, registeredEventIds: [], institution: initialInstitutionState };
+export const initialState: DemoState = { profile: sampleProfile, profileDetails: sampleProfileDetails, profilePreferences: sampleProfilePreferences, intent: null, request: null, messages: [], conversationConfirmed: false, meeting: null, callLink: null, incoming: null, registeredEventIds: [], savedJobIds: [], referralRequests: {}, institution: initialInstitutionState };
 export function isValidCallLink(value: string): boolean {
   try { return ["https:", "http:"].includes(new URL(value).protocol); } catch { return false; }
 }
@@ -123,6 +126,8 @@ export type Action =
   | { type: "receive-incoming-call-link" }
   | { type: "outcome"; outcome: Outcome }
   | { type: "register-event"; eventId: string }
+  | { type: "toggle-saved-job"; jobId: string }
+  | { type: "request-referral"; jobId: string; message: string }
   | { type: "institution"; action: InstitutionAction }
   | { type: "new-journey" }
   | { type: "reset" };
@@ -184,8 +189,18 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
     case "register-event":
       if (state.registeredEventIds.includes(action.eventId) || !publicInstitutionEvents(state.institution).some(event => event.id === action.eventId && event.registrationOpen)) return state;
       return { ...state, registeredEventIds: [...state.registeredEventIds, action.eventId] };
+    case "toggle-saved-job": {
+      if (!jobs.some(job => job.id === action.jobId)) return state;
+      const savedJobIds = state.savedJobIds.includes(action.jobId) ? state.savedJobIds.filter(id => id !== action.jobId) : [...state.savedJobIds, action.jobId];
+      return { ...state, savedJobIds };
+    }
+    case "request-referral": {
+      const message = action.message.trim();
+      if (message.length < 15 || message.length > 600 || state.referralRequests[action.jobId] || !jobs.some(job => job.id === action.jobId && job.referralAvailable)) return state;
+      return { ...state, referralRequests: { ...state.referralRequests, [action.jobId]: message } };
+    }
     case "institution": return { ...state, institution: institutionReducer(state.institution, action.action) };
-    case "new-journey": return { ...initialState, profile: state.profile, profileDetails: state.profileDetails, profilePreferences: state.profilePreferences, incoming: state.incoming, registeredEventIds: state.registeredEventIds, institution: state.institution };
+    case "new-journey": return { ...initialState, profile: state.profile, profileDetails: state.profileDetails, profilePreferences: state.profilePreferences, incoming: state.incoming, registeredEventIds: state.registeredEventIds, savedJobIds: state.savedJobIds, referralRequests: state.referralRequests, institution: state.institution };
     case "reset": return initialState;
   }
 }

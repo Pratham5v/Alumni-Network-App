@@ -4,6 +4,20 @@ import { demoReducer, initialState } from "../src/lib/model";
 import { initialInstitutionState, institutionReducer, previewAlumniBatch, publicInstitutionEvents, readyAlumni, sampleBatchCsv } from "../src/lib/institution";
 import { sampleAlumniRecord } from "../src/lib/onboarding";
 
+test("open communities join directly while approval-based communities share the admin queue", () => {
+  const member = { id: "prathmesh", name: "Prathmesh Mehrotra", batch: "2026", role: "member" } as const;
+  const action = { type: "join-community", id: "bengaluru", member, message: "I’d like to meet local alumni." } as const;
+  const openJoined = institutionReducer(initialInstitutionState, { ...action, id: "product-startups" });
+  assert.ok(openJoined.communities.find(item => item.id === "product-startups")?.members.includes(member));
+  const pending = institutionReducer(openJoined, action);
+  assert.ok(pending.communities.find(item => item.id === action.id)?.requests.some(item => item.member === member));
+  assert.equal(institutionReducer(pending, action), pending);
+  const withdrawn = institutionReducer(pending, { type: "cancel-community-request", id: action.id, memberId: member.id });
+  assert.ok(!withdrawn.communities.find(item => item.id === action.id)?.requests.some(item => item.member === member));
+  const approved = institutionReducer(pending, { type: "membership", id: action.id, memberId: member.id, approve: true });
+  assert.ok(approved.communities.find(item => item.id === action.id)?.members.includes(member));
+});
+
 test("batch import previews errors, handles quoted values and never imports duplicates", () => {
   const csv = sampleBatchCsv.replace("Kavya Menon", '"Menon, Kavya"');
   const rows = previewAlumniBatch(csv, initialInstitutionState.records);

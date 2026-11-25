@@ -14,6 +14,7 @@ const sampleJoinRequests: JoinRequest[] = [
 export type Community = {
   id: string; name: string; location: string; description: string;
   members: CommunityMember[]; requests: JoinRequest[]; activity: string[]; activeIntents: number;
+  openMembership?: boolean;
 };
 export type TalkDraft = { title: string; date: string; time: string; description: string; message: string };
 export type InstitutionTalk = TalkDraft & { id: string; status: "awaiting" | "accepted" | "published" };
@@ -44,6 +45,16 @@ export const initialInstitutionState: InstitutionState = {
     members: [member("ananya", "Ananya Sen", "2026", "moderator"), member("aarav", "Aarav Shah", "2018"), member("ishaan", "Ishaan Sethi", "2026")],
     requests: sampleJoinRequests,
     activeIntents: 3, activity: ["Ananya Sen was assigned as moderator"],
+  }, {
+    id: "product-startups", name: "Product & Startups", location: "Across locations", openMembership: true,
+    description: "Trade feedback on product ideas, compare notes on early-stage decisions, and meet alumni building new things.",
+    members: [member("neha", "Neha Rao", "2016", "moderator"), member("aarav", "Aarav Shah", "2018")],
+    requests: [], activeIntents: 0, activity: [],
+  }, {
+    id: "software-engineering", name: "Software Engineering", location: "Across locations", openMembership: true,
+    description: "Meet alumni working in software and share practical advice on system design, interviews and growing as an engineer.",
+    members: [member("kabir", "Kabir Mehta", "2019", "moderator"), member("ananya", "Ananya Sen", "2026")],
+    requests: [], activeIntents: 0, activity: [],
   }],
   talks: [],
   campaigns: [sampleCampaign],
@@ -112,6 +123,8 @@ export type InstitutionAction =
   | { type: "save-community"; id?: string; name: string; location: string; description: string }
   | { type: "membership"; id: string; memberId: string; approve: boolean }
   | { type: "sample-join"; id: string }
+  | { type: "join-community"; id: string; member: CommunityMember; message: string }
+  | { type: "cancel-community-request"; id: string; memberId: string }
   | { type: "add-member"; id: string; email: string }
   | { type: "member-role"; id: string; memberId: string; role: CommunityMember["role"] }
   | { type: "remove-member"; id: string; memberId: string }
@@ -187,6 +200,8 @@ export function institutionReducer(state: InstitutionState, action: InstitutionA
         [...state.communities, { id: `community-${state.communities.length + 1}`, ...details, members: [], requests: [], activeIntents: 0, activity: [activity] }];
       return log({ ...state, communities }, `${name} · ${activity}`);
     }
+    case "join-community":
+    case "cancel-community-request":
     case "sample-join":
     case "add-member":
     case "membership":
@@ -196,7 +211,19 @@ export function institutionReducer(state: InstitutionState, action: InstitutionA
       if (!community) return state;
       let updated = community;
       let message: string;
-      if (action.type === "sample-join") {
+      if (action.type === "join-community") {
+        const joining = action.member;
+        if (community.members.some(item => item.id === joining.id) || community.requests.some(item => item.member.id === joining.id)) return state;
+        message = community.openMembership ? `${joining.name} joined ${community.name}` : `${joining.name} requested to join ${community.name}`;
+        updated = community.openMembership
+          ? { ...community, members: [...community.members, joining] }
+          : { ...community, requests: [...community.requests, { member: joining, message: action.message.trim() }] };
+      } else if (action.type === "cancel-community-request") {
+        const request = community.requests.find(item => item.member.id === action.memberId);
+        if (!request) return state;
+        message = `${request.member.name} withdrew their request to join ${community.name}`;
+        updated = { ...community, requests: community.requests.filter(item => item !== request) };
+      } else if (action.type === "sample-join") {
         const sample = sampleJoinCandidate(community);
         if (!sample) return state;
         message = `${sample.member.name} requested to join ${community.name} in the demo`;

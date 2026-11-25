@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, ArrowUpRight, BriefcaseBusiness, CalendarDays, ChevronRight, FlaskConical, Heart, MapPin, Plus, Users } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BriefcaseBusiness, CalendarDays, ChevronRight, FlaskConical, Heart, Plus, Users } from "lucide-react";
 import { campaignProgress, demoSupporterId, formatDeadline, formatRupees, isCampaignAmount, isCampaignOpen, maxCampaignAmount, todayInIndia, type Campaign } from "@/lib/fundraising";
-import { type Community } from "@/lib/institution";
 import "./explore.css";
 
 const destinations = [
@@ -14,12 +13,6 @@ const destinations = [
 ] as const;
 
 type Destination = typeof destinations[number]["id"];
-
-const sampleRoles = [
-  { title: "Backend Engineer", company: "Asterline Systems", location: "Bengaluru", format: "Hybrid · Full-time", description: "Build reliable APIs and services for applied AI products. Experience with backend development and working across engineering teams is useful." },
-  { title: "Product Design Intern", company: "Northstar Labs", location: "Gurgaon", format: "On-site · Internship", description: "Work with an early-stage team to prototype product ideas, run usability sessions, and turn feedback into design changes." },
-  { title: "Data Analyst", company: "Clearwater Studio", location: "Remote", format: "Remote · Full-time", description: "Work with product teams to define metrics, explain trends, and build clear reports from operational data." },
-];
 
 export function ExploreHub({ featured, open, openCampaign }: { featured?: Campaign; open: (destination: Destination) => void; openCampaign: (id: string) => void }) {
   return <>
@@ -35,20 +28,6 @@ export function ExploreHub({ featured, open, openCampaign }: { featured?: Campai
       <span className="giving-feature-footer"><span><b>{formatRupees(campaignProgress(featured).total)}</b> pledged</span><span>View campaign<ArrowRight size={15} aria-hidden="true" /></span></span>
     </button>}
   </>;
-}
-
-export function JobBoard() {
-  return <div className="explore-list">{sampleRoles.map(role => <details key={role.title} className="explore-entry">
-    <summary><span className="explore-icon sage"><BriefcaseBusiness size={19} aria-hidden="true" /></span><span><strong>{role.title}</strong><small>{role.company} · {role.location}</small></span><ChevronRight size={17} aria-hidden="true" /></summary>
-    <div><strong>{role.format}</strong><p>{role.description}</p></div>
-  </details>)}</div>;
-}
-
-export function ExploreCommunities({ communities }: { communities: Community[] }) {
-  return <div className="explore-list">{communities.map(community => <details key={community.id} className="explore-entry">
-    <summary><span className="explore-icon lilac"><Users size={19} aria-hidden="true" /></span><span><strong>{community.name}</strong><small>{community.location} · {community.members.length} {community.members.length === 1 ? "member" : "members"}</small></span><ChevronRight size={17} aria-hidden="true" /></summary>
-    <div>{community.description && <p>{community.description}</p>}<span className="giving-meta"><MapPin size={15} aria-hidden="true" />{community.location}</span></div>
-  </details>)}</div>;
 }
 
 export function CampaignProgress({ campaign }: { campaign: Campaign }) {

@@ -25,6 +25,20 @@ test("registration requires a listed event with registration open", () => {
   assert.equal(demoReducer(initialState, { type: "register-event", eventId: "unknown" }), initialState);
 });
 
+test("saved jobs and referrals are independent of the active intent journey", () => {
+  const jobId = "backend-engineer";
+  const saved = demoReducer(withRequest(), { type: "toggle-saved-job", jobId });
+  const referral = { type: "request-referral", jobId, message: "I’d appreciate a referral for this backend role." } as const;
+  const requested = demoReducer(saved, referral);
+  assert.equal(requested.request, saved.request);
+  assert.equal(demoReducer(requested, { ...referral, message: "This should not replace the first request." }), requested);
+  assert.equal(demoReducer(requested, { ...referral, jobId: "data-analyst" }), requested);
+  const next = demoReducer(requested, { type: "new-journey" });
+  assert.equal(next.referralRequests[jobId], referral.message);
+  assert.deepEqual(next.savedJobIds, [jobId]);
+  assert.deepEqual(demoReducer(next, { type: "toggle-saved-job", jobId }).savedJobIds, []);
+});
+
 test("a request needs an active intent; duplicate submissions keep the original", () => {
   const action = { type: "request", request: { personId: "aarav", message: "A clear ask", commitment: "20-minute call" } } as const;
   assert.equal(demoReducer(initialState, action), initialState);

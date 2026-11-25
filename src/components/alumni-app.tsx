@@ -10,18 +10,22 @@ import { googleCalendarUrl, interviewTimeLabel } from "@/lib/calendar";
 import { aiLecture, distinguishedAlumnus, eventDateBadge, eventDateLabel, type AlumniEvent } from "@/lib/events";
 import { publicInstitutionEvents } from "@/lib/institution";
 import { isCampaignOpen, todayInIndia } from "@/lib/fundraising";
+import { jobs } from "@/lib/jobs";
 import InstitutionAdmin from "./institution-admin";
-import { CampaignList, CampaignPresentation, ExploreCommunities, ExploreHub, JobBoard, PledgeSupport } from "./explore";
+import { CampaignList, CampaignPresentation, ExploreHub, PledgeSupport } from "./explore";
+import { CommunityDetail, ExploreCommunities, JobBoard, JobDetail, type CommunityFilters, type JobFilters } from "./explore-directory";
 import "./institution-admin.css";
 
-type Screen = "welcome" | "walkthroughs" | "onboard" | "verify" | "admin" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "profile-edit" | "profile-settings" | "profile-preview" | "received-request" | "received-conversation" | "distinguished-profile" | "explore" | "events" | "event" | "jobs" | "communities" | "campaigns" | "campaign";
-const exploreScreens: Screen[] = ["explore", "events", "event", "jobs", "communities", "campaigns", "campaign"];
+type Screen = "welcome" | "walkthroughs" | "onboard" | "verify" | "admin" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "profile-edit" | "profile-settings" | "profile-preview" | "received-request" | "received-conversation" | "distinguished-profile" | "explore" | "events" | "event" | "jobs" | "job" | "communities" | "community" | "campaigns" | "campaign";
+const exploreScreens: Screen[] = ["explore", "events", "event", "jobs", "job", "communities", "community", "campaigns", "campaign"];
 const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "profile-edit", "profile-settings", "profile-preview", "received-request", "received-conversation", "distinguished-profile", ...exploreScreens];
 type IntentForm = Omit<Intent, "status">;
 type ContactPreview = { title: string; value: string };
 type EventPage = { id: string; from: "events" | "distinguished-profile" };
-type NavigationTarget = EventPage | { campaignId: string };
+type NavigationTarget = EventPage | { campaignId: string } | { directoryId: string };
 const defaultEventPage: EventPage = { id: aiLecture.id, from: "events" };
+const defaultJobFilters: JobFilters = { query: "", workMode: "", savedOnly: false };
+const defaultCommunityFilters: CommunityFilters = { query: "", mine: false };
 const alumniBatches = [...new Set([...people, distinguishedAlumnus].map(alumnus => alumnus.batch))].sort((a, b) => Number(b) - Number(a));
 const riya = { id: "riya", initials: "RS", color: "sage" };
 
@@ -138,6 +142,9 @@ export default function AlumniApp() {
   const [personId, setPersonId] = useState("aarav");
   const [eventPage, setEventPage] = useState(defaultEventPage);
   const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [directoryId, setDirectoryId] = useState<string | null>(null);
+  const [jobFilters, setJobFilters] = useState(defaultJobFilters);
+  const [communityFilters, setCommunityFilters] = useState(defaultCommunityFilters);
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("All locations");
   const [expertise, setExpertise] = useState("All expertise");
@@ -166,6 +173,9 @@ export default function AlumniApp() {
   const publishedCampaigns = state.institution.campaigns.filter(campaign => campaign.status === "published").reverse();
   const featuredCampaign = screen === "explore" ? publishedCampaigns.find(campaign => isCampaignOpen(campaign, todayInIndia())) : undefined;
   const selectedCampaign = publishedCampaigns.find(campaign => campaign.id === campaignId);
+  const selectedJob = jobs.find(job => job.id === directoryId);
+  const referralJobs = jobs.filter(job => state.referralRequests[job.id]);
+  const selectedCommunity = state.institution.communities.find(community => community.id === directoryId);
   const inside = appScreens.includes(screen);
   const contactPreview = typeof sheet === "object" ? sheet : null;
   const intent = state.intent;
@@ -188,10 +198,13 @@ export default function AlumniApp() {
     setConfirmation(message ? { screen: next, message } : null);
     const event = target && "from" in target ? target : undefined;
     const campaign = target && "campaignId" in target ? target.campaignId : undefined;
+    const directory = target && "directoryId" in target ? target.directoryId : undefined;
     if (event) setEventPage(event);
     if (campaign) setCampaignId(campaign);
+    if (directory) setDirectoryId(directory);
     setMatchToIntent(match);
-    window.history.pushState({ screen: next, event, campaign, match }, "", event ? `#event/${event.id}` : campaign ? `#campaign/${campaign}` : `#${next}`);
+    const recordId = event?.id ?? campaign ?? directory;
+    window.history.pushState({ screen: next, event, campaign, directory, match }, "", recordId ? `#${next}/${recordId}` : `#${next}`);
     setScreen(next);
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
@@ -202,6 +215,7 @@ export default function AlumniApp() {
       setConfirmation(null);
       if (event.state?.screen === "event") setEventPage(event.state.event ?? defaultEventPage);
       if (event.state?.screen === "campaign") setCampaignId(event.state.campaign ?? null);
+      if (event.state?.screen === "job" || event.state?.screen === "community") setDirectoryId(event.state.directory ?? null);
       setMatchToIntent(event.state?.match === true);
       setScreen(event.state?.screen || "welcome");
       window.scrollTo({ top: 0, behavior: "instant" });
@@ -209,7 +223,7 @@ export default function AlumniApp() {
     window.addEventListener("popstate", onBack);
     return () => { window.removeEventListener("popstate", onBack); timers.current.forEach(clearTimeout); };
   }, []);
-  useEffect(() => { headingRef.current?.focus({ preventScroll: true }); }, [screen]);
+  useEffect(() => { headingRef.current?.focus({ preventScroll: true }); }, [screen, directoryId]);
   useEffect(() => {
     const length = screen === "received-conversation" ? incoming?.messages.length ?? 0 : state.messages.length;
     if (lastThread.current?.screen === screen && lastThread.current.length < length) {
@@ -311,6 +325,8 @@ export default function AlumniApp() {
   }
   function restart() {
     timers.current.forEach(clearTimeout); timers.current = [];
+    setJobFilters(defaultJobFilters);
+    setCommunityFilters(defaultCommunityFilters);
     dispatch({ type: "reset" }); updateOnboarding({ type: "reset" }); setBusy(false); setIntentForm(sampleIntent); setOutcome(sampleOutcome); clearDiscoveryFilters(); setFiltersOpen(false); go("welcome");
   }
   function openReceived() { dispatch({ type: "read-incoming" }); go("received-request"); }
@@ -645,9 +661,25 @@ export default function AlumniApp() {
       <ExploreHub featured={featuredCampaign} open={destination => go(destination)} openCampaign={id => go("campaign", undefined, { campaignId: id })} />
     </>; break;
 
-    case "jobs": content = <>{back("explore", "Explore")}{title("Job board", "Browse sample roles shared by alumni.")}<JobBoard /></>; break;
+    case "jobs": content = <>{back("explore", "Explore")}{title("Job board", "Find roles shared by your alumni network.")}
+      <JobBoard filters={jobFilters} updateFilters={setJobFilters} saved={state.savedJobIds} referrals={state.referralRequests} toggle={jobId => dispatch({ type: "toggle-saved-job", jobId })} open={directoryId => go("job", undefined, { directoryId })} />
+    </>; break;
 
-    case "communities": content = <>{back("explore", "Explore")}{title("Communities", "Discover groups across your alumni network.")}<ExploreCommunities communities={state.institution.communities} /></>; break;
+    case "job": content = <>{back("jobs", "Job board")}{selectedJob ? <JobDetail key={selectedJob.id} job={selectedJob} headingRef={headingRef}
+      saved={state.savedJobIds.includes(selectedJob.id)} message={state.referralRequests[selectedJob.id]}
+      toggle={() => dispatch({ type: "toggle-saved-job", jobId: selectedJob.id })}
+      request={message => dispatch({ type: "request-referral", jobId: selectedJob.id, message })} viewRequests={() => go("requests")}
+    /> : title("Role unavailable")}</>; break;
+
+    case "communities": content = <>{back("explore", "Explore")}{title("Communities", "Find alumni groups by location or shared interests.")}
+      <ExploreCommunities communities={state.institution.communities} viewerId={self.id} filters={communityFilters} updateFilters={setCommunityFilters} open={directoryId => go("community", undefined, { directoryId })} />
+    </>; break;
+
+    case "community": content = <>{back("communities", "Communities")}{selectedCommunity ? <CommunityDetail key={selectedCommunity.id} community={selectedCommunity} viewerId={self.id} headingRef={headingRef}
+      join={message => dispatch({ type: "institution", action: { type: "join-community", id: selectedCommunity.id, member: { id: self.id, name: state.profile.name, batch: state.profile.batch, role: "member" }, message } })}
+      withdraw={() => dispatch({ type: "institution", action: { type: "cancel-community-request", id: selectedCommunity.id, memberId: self.id } })}
+      leave={() => dispatch({ type: "institution", action: { type: "remove-member", id: selectedCommunity.id, memberId: self.id } })}
+    /> : title("Community unavailable")}</>; break;
 
     case "campaigns": content = <>
       {back("explore", "Explore")}{title("Fundraising", "Support causes backed by your university.")}
@@ -808,7 +840,13 @@ export default function AlumniApp() {
           <div className="row gap"><Avatar person={recipient} size="small" /><span>{recipient.name}<span className="block small muted">{request.commitment}</span></span></div>
         </button>
       </section>}
-      {!request && !incoming && <Empty icon={<MessageCircle size={27} />} title="Good conversations start here" action={<Button onClick={() => go(intent ? "people" : "create")}>{intent ? "Discover alumni" : "Create an intent"}</Button>}>Find someone open to helping and send a specific request.</Empty>}
+      {referralJobs.length > 0 && <section><div className="section-heading"><h2>Job referrals</h2></div><div className="explore-list">
+        {referralJobs.map(job => <button key={job.id} type="button" className="request-list-card" onClick={() => go("job", undefined, { directoryId: job.id })}>
+          <div className="row between"><Tag warm>Awaiting response</Tag><ChevronRight size={19} aria-hidden="true" /></div>
+          <h3>{job.title}</h3><p className="small muted">{job.company} · {people.find(person => person.id === job.sharedBy)?.name}</p>
+        </button>)}
+      </div></section>}
+      {!request && !incoming && referralJobs.length === 0 && <Empty icon={<MessageCircle size={27} />} title="Good conversations start here" action={<Button onClick={() => go(intent ? "people" : "create")}>{intent ? "Discover alumni" : "Create an intent"}</Button>}>Find someone open to helping and send a specific request.</Empty>}
     </>; break;
 
     case "request": content = request ? <>
