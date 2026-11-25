@@ -10,14 +10,14 @@ import { googleCalendarUrl, interviewTimeLabel } from "@/lib/calendar";
 import { aiLecture, distinguishedAlumnus, eventDateBadge, eventDateLabel, type AlumniEvent } from "@/lib/events";
 import { publicInstitutionEvents } from "@/lib/institution";
 import { isCampaignOpen, todayInIndia } from "@/lib/fundraising";
-import { jobs } from "@/lib/jobs";
+import { alumniJobPosterId, defaultJobFilters, jobs } from "@/lib/jobs";
 import InstitutionAdmin from "./institution-admin";
 import { CampaignList, CampaignPresentation, ExploreHub, PledgeSupport } from "./explore";
-import { CommunityDetail, ExploreCommunities, JobBoard, JobDetail, type CommunityFilters, type JobFilters } from "./explore-directory";
+import { CommunityDetail, ExploreCommunities, JobBoard, JobDetail, ShareJobForm, type CommunityFilters } from "./explore-directory";
 import "./institution-admin.css";
 
-type Screen = "welcome" | "walkthroughs" | "onboard" | "verify" | "admin" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "profile-edit" | "profile-settings" | "profile-preview" | "received-request" | "received-conversation" | "distinguished-profile" | "explore" | "events" | "event" | "jobs" | "job" | "communities" | "community" | "campaigns" | "campaign";
-const exploreScreens: Screen[] = ["explore", "events", "event", "jobs", "job", "communities", "community", "campaigns", "campaign"];
+type Screen = "welcome" | "walkthroughs" | "onboard" | "verify" | "admin" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "profile-edit" | "profile-settings" | "profile-preview" | "received-request" | "received-conversation" | "distinguished-profile" | "explore" | "events" | "event" | "jobs" | "job" | "share-job" | "communities" | "community" | "campaigns" | "campaign";
+const exploreScreens: Screen[] = ["explore", "events", "event", "jobs", "job", "share-job", "communities", "community", "campaigns", "campaign"];
 const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "profile-edit", "profile-settings", "profile-preview", "received-request", "received-conversation", "distinguished-profile", ...exploreScreens];
 type IntentForm = Omit<Intent, "status">;
 type ContactPreview = { title: string; value: string };
@@ -25,7 +25,6 @@ type EventPage = { id: string; from: "events" | "distinguished-profile" };
 type ComposeFrom = "people" | "profile";
 type NavigationTarget = EventPage | { campaignId: string } | { directoryId: string } | { composeFrom: ComposeFrom };
 const defaultEventPage: EventPage = { id: aiLecture.id, from: "events" };
-const defaultJobFilters: JobFilters = { query: "", workMode: "", savedOnly: false };
 const defaultCommunityFilters: CommunityFilters = { query: "", mine: false };
 const alumniBatches = [...new Set([...people, distinguishedAlumnus].map(alumnus => alumnus.batch))].sort((a, b) => Number(b) - Number(a));
 const riya = { id: "riya", initials: "RS", color: "sage" };
@@ -205,7 +204,8 @@ export default function AlumniApp() {
   const publishedCampaigns = state.institution.campaigns.filter(campaign => campaign.status === "published").reverse();
   const featuredCampaign = screen === "explore" ? publishedCampaigns.find(campaign => isCampaignOpen(campaign, todayInIndia())) : undefined;
   const selectedCampaign = publishedCampaigns.find(campaign => campaign.id === campaignId);
-  const selectedJob = jobs.find(job => job.id === directoryId);
+  const listedJobs = [...state.sharedJobs, ...jobs];
+  const selectedJob = listedJobs.find(job => job.id === directoryId);
   const referralJobs = jobs.filter(job => state.referralRequests[job.id]);
   const selectedCommunity = state.institution.communities.find(community => community.id === directoryId);
   const inside = appScreens.includes(screen);
@@ -219,7 +219,8 @@ export default function AlumniApp() {
   const { notifications, available: availableForRequests, incomingRequestsPaused } = state.profilePreferences;
   const unreadCount = (notifications.replies && request && request.status !== "completed" ? 1 : 0) + (notifications.requests && incoming?.unread ? 1 : 0);
   const firstName = state.profile.name.trim().split(/\s+/)[0] || "Prathmesh";
-  const self = { id: "prathmesh", initials: state.profile.name.split(/\s+/).map(name => name[0]).slice(0, 2).join(""), color: "sage" };
+  const self = { id: alumniJobPosterId, initials: state.profile.name.split(/\s+/).map(name => name[0]).slice(0, 2).join(""), color: "sage" };
+  const jobViewer = { ...state.profile, id: self.id };
   const eventAttendees = state.registeredEventIds.includes(selectedEvent.id)
     ? [{ ...self, name: state.profile.name, role: state.profile.role, batch: state.profile.batch }, ...selectedEvent.attendees]
     : selectedEvent.attendees;
@@ -728,13 +729,26 @@ export default function AlumniApp() {
       <ExploreHub featured={featuredCampaign} open={destination => go(destination)} openCampaign={id => go("campaign", undefined, { campaignId: id })} />
     </>; break;
 
-    case "jobs": content = <>{back("explore", "Explore")}{title("Job board", "Find roles shared by your alumni network.")}
-      <JobBoard filters={jobFilters} updateFilters={setJobFilters} saved={state.savedJobIds} referrals={state.referralRequests} toggle={jobId => dispatch({ type: "toggle-saved-job", jobId })} open={directoryId => go("job", undefined, { directoryId })} />
+    case "jobs": content = <>{back("explore", "Explore")}
+      <div className="job-board-heading">{title("Job board", "Find roles shared by your alumni network.")}
+        <Button type="button" onClick={() => go("share-job")}><Plus size={18} aria-hidden="true" />Share a job</Button>
+      </div>
+      <JobBoard jobs={listedJobs} viewer={jobViewer} filters={jobFilters} updateFilters={setJobFilters} saved={state.savedJobIds} applied={state.appliedJobIds} referrals={state.referralRequests} toggle={jobId => dispatch({ type: "toggle-saved-job", jobId })} open={directoryId => go("job", undefined, { directoryId })} />
     </>; break;
 
-    case "job": content = <>{back("jobs", "Job board")}{selectedJob ? <JobDetail key={selectedJob.id} job={selectedJob} headingRef={headingRef}
-      saved={state.savedJobIds.includes(selectedJob.id)} message={state.referralRequests[selectedJob.id]}
+    case "share-job": content = <>{back("jobs", "Job board")}{title("Share a job")}
+      <ShareJobForm cancel={() => go("jobs")} publish={draft => {
+        const directoryId = crypto.randomUUID();
+        dispatch({ type: "share-job", jobId: directoryId, draft });
+        setJobFilters(defaultJobFilters);
+        go("job", "Job published", { directoryId });
+      }} />
+    </>; break;
+
+    case "job": content = <>{back("jobs", "Job board")}{confirmationMessage && <Confirmation message={confirmationMessage} />}{selectedJob ? <JobDetail key={selectedJob.id} job={selectedJob} viewer={jobViewer} headingRef={headingRef}
+      saved={state.savedJobIds.includes(selectedJob.id)} applied={state.appliedJobIds.includes(selectedJob.id)} message={state.referralRequests[selectedJob.id]}
       toggle={() => dispatch({ type: "toggle-saved-job", jobId: selectedJob.id })}
+      setApplied={applied => dispatch({ type: "set-job-applied", jobId: selectedJob.id, applied })}
       request={message => dispatch({ type: "request-referral", jobId: selectedJob.id, message })} viewRequests={() => go("requests")}
     /> : title("Role unavailable")}</>; break;
 

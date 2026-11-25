@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { demoReducer, demoReply, incomingScenario, initialState, sampleCallLink, sampleIntent, sampleOutcome } from "../src/lib/model";
 import { aiLecture, alumniEvents } from "../src/lib/events";
+import { defaultJobFilters, jobs, matchesJobFilters } from "../src/lib/jobs";
 
 const withIntent = () => demoReducer(initialState, { type: "publish", intent: sampleIntent });
 const withRequest = () => demoReducer(withIntent(), { type: "request", request: { personId: "aarav", message: "Could you share feedback on my startup idea?", commitment: "20-minute call" } });
@@ -37,6 +38,44 @@ test("saved jobs and referrals are independent of the active intent journey", ()
   assert.equal(next.referralRequests[jobId], referral.message);
   assert.deepEqual(next.savedJobIds, [jobId]);
   assert.deepEqual(demoReducer(next, { type: "toggle-saved-job", jobId }).savedJobIds, []);
+});
+
+test("published jobs accept web links and stay on the board across intent journeys", () => {
+  const action = {
+    type: "share-job", jobId: "shared-job-1",
+    draft: { title: " Backend Engineer ", company: "Example", location: "", workMode: "Remote",
+      description: "Build and maintain product APIs.", applicationUrl: "https://example.com/jobs/backend", referralAvailable: true },
+  } as const;
+  const invalid = { ...action, draft: { ...action.draft, applicationUrl: "javascript:alert(1)" } };
+  assert.equal(demoReducer(initialState, invalid), initialState);
+  const published = demoReducer(initialState, action);
+  assert.deepEqual(published.sharedJobs[0], { ...action.draft, title: "Backend Engineer", id: action.jobId, sharedBy: "prathmesh" });
+  assert.equal(demoReducer(published, action), published);
+  const saved = demoReducer(published, { type: "toggle-saved-job", jobId: action.jobId });
+  assert.deepEqual(saved.savedJobIds, [action.jobId]);
+  assert.equal(demoReducer(saved, { type: "set-job-applied", jobId: action.jobId, applied: true }), saved);
+  assert.deepEqual(demoReducer(saved, { type: "new-journey" }).sharedJobs, saved.sharedJobs);
+  assert.deepEqual(demoReducer(saved, { type: "reset" }).sharedJobs, []);
+});
+
+test("applied jobs are tracked independently from saved jobs and can be removed", () => {
+  const action = { type: "set-job-applied", jobId: "backend-engineer", applied: true } as const;
+  const applied = demoReducer(initialState, action);
+  assert.deepEqual(applied.appliedJobIds, [action.jobId]);
+  assert.deepEqual(applied.savedJobIds, []);
+  assert.equal(demoReducer(applied, action), applied);
+  assert.deepEqual(demoReducer(applied, { type: "new-journey" }).appliedJobIds, [action.jobId]);
+  assert.deepEqual(demoReducer(applied, { ...action, applied: false }).appliedJobIds, []);
+});
+
+test("job search combines location, industry, experience level, job type and work mode", () => {
+  const filters = { ...defaultJobFilters, query: "asterline", location: "bengaluru", industry: "Technology",
+    experienceLevel: "Senior level", employment: "Full-time", workMode: "Hybrid" };
+  assert.deepEqual(jobs.filter(job => matchesJobFilters(job, filters)).map(job => job.id), ["backend-engineer"]);
+  for (const change of [{ location: "India" }, { industry: "Healthcare" }, { experienceLevel: "Entry level" },
+    { employment: "Internship" }, { workMode: "Remote" }]) {
+    assert.equal(jobs.some(job => matchesJobFilters(job, { ...filters, ...change })), false);
+  }
 });
 
 test("both privacy controls gate new requests while keeping the existing inbox", () => {
