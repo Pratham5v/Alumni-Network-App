@@ -334,10 +334,21 @@ export default function AlumniApp() {
   function receivedStatus() {
     return incoming?.status === "accepted" ? "Accepted" : incoming?.status === "declined" ? "Declined" : incoming?.status === "alternative-suggested" ? "Recommendation sent" : "Awaiting your response";
   }
-  function incomingHomeCard() {
+  function incomingRequestCard(featured = false) {
+    const sender = incoming?.unread ? "New request from Riya" : "Request from Riya";
+    const detail = incoming?.status === "pending" ? incomingScenario.commitment : receivedStatus();
+    if (featured && incoming?.status === "pending") {
+      return <button type="button" className="home-incoming-request" onClick={openReceived}>
+        <span className="home-incoming-summary">
+          <Avatar person={riya} />
+          <span><span className="request-kicker">{sender}</span><strong>{incomingScenario.title}</strong><span>{detail}</span></span>
+        </span>
+        <span className="home-incoming-action">Review request<ArrowRight size={17} aria-hidden="true" /></span>
+      </button>;
+    }
     return <button className="incoming-card" onClick={openReceived}>
       <Avatar person={riya} />
-      <span><span className="request-kicker">{incoming?.unread ? "New request from Riya" : "Request from Riya"}</span><strong>{incomingScenario.title}</strong><span>{incoming?.status === "pending" ? incomingScenario.commitment : receivedStatus()}</span></span>
+      <span><span className="request-kicker">{sender}</span><strong>{incomingScenario.title}</strong><span>{detail}</span></span>
       <ChevronRight size={19} aria-hidden="true" />
     </button>;
   }
@@ -373,9 +384,21 @@ export default function AlumniApp() {
       <ChevronRight size={18} aria-hidden="true" />
     </button>;
   }
-  function intentCard() {
+  function intentCard(withOutcome = false) {
     if (!intent) return null;
-    return <button className="intent-card" onClick={() => go("intent")}><div className="row between"><Tag><span className="availability-dot" />{intent.status === "resolved" ? "Resolved" : "Active intent"}</Tag><ChevronRight size={19} aria-hidden="true" /></div><h2>{intent.title}</h2><p>{intent.context}</p><div className="meta"><Clock3 size={15} aria-hidden="true" />{intent.commitment}<span>·</span>{intent.status === "active" ? `${intent.expires} days` : "Closed with feedback"}</div></button>;
+    const resolved = intent.status === "resolved";
+    const card = <button type="button" className="intent-card" onClick={() => go("intent")}>
+      <span className="row between"><Tag>{withOutcome && resolved ? <Check size={14} aria-hidden="true" /> : <span className="availability-dot" />}{resolved ? "Resolved" : "Active intent"}</Tag><ChevronRight size={19} aria-hidden="true" /></span>
+      <span className="intent-card-title">{intent.title}</span><span className="intent-card-context">{intent.context}</span>
+      {(!withOutcome || !resolved) && <span className="meta"><Clock3 size={15} aria-hidden="true" />{intent.commitment}<span>·</span>{resolved ? "Closed with feedback" : `${intent.expires} days`}</span>}
+    </button>;
+    return withOutcome ? <div className={`home-intent-summary${resolved ? " resolved" : ""}`}>
+      {card}
+      <div className="home-intent-outcome">
+        <span><CheckCheck size={17} aria-hidden="true" />Outcome recorded</span>
+        <button type="button" className="text-button" onClick={() => go("success")}>View outcome</button>
+      </div>
+    </div> : card;
   }
 
   const searchTerm = search.toLowerCase().trim();
@@ -540,8 +563,12 @@ export default function AlumniApp() {
     }
 
     case "home": content = <>{title(`Hi, ${firstName}.`, undefined, "BITS alumni network")}
-      {incoming && incomingHomeCard()}
-      {!intent ? <section className="home-prompt"><div className="prompt-icon"><MessageCircle size={25} strokeWidth={1.6} /></div><h2>What could your community help with?</h2><p>A fresh perspective, a career question, or a conversation with someone who’s been there.</p><Button onClick={() => go("create")}><Plus size={19} />Create an intent</Button></section> : <><div className="section-heading"><h2>Your intent</h2><button className="text-button" onClick={() => go("intents")}>View</button></div>{intentCard()}{request?.status === "completed" ? <div className="notice soft"><CheckCheck size={20} /><div><strong>You closed the loop.</strong><p>Your outcome has been recorded.</p><button className="text-button" onClick={() => go("success")}>View outcome</button></div></div> : request ? <button className="next-step" onClick={() => go("request")}><MessageCircle size={21} /><span><strong>{request.status === "accepted" ? `${recipient.name.split(" ")[0]} accepted your request` : "Your request is awaiting a response"}</strong><span>{request.status === "accepted" ? "Continue the conversation" : "View your request"}</span></span><ChevronRight size={19} /></button> : <Button className="full-width" onClick={() => go("people")}>Find alumni who can help</Button>}</>}
+      {incoming && incomingRequestCard(true)}
+      {!intent ? <section className="home-prompt"><div className="prompt-icon"><MessageCircle size={25} strokeWidth={1.6} /></div><h2>What could your community help with?</h2><p>A fresh perspective, a career question, or a conversation with someone who’s been there.</p><Button onClick={() => go("create")}><Plus size={19} />Create an intent</Button></section> : <>
+        <div className="section-heading"><h2>Your intent</h2><button className="text-button" onClick={() => go("intents")}>View all</button></div>
+        {intentCard(request?.status === "completed")}
+        {request?.status !== "completed" && (request ? <button className="next-step" onClick={() => go("request")}><MessageCircle size={21} /><span><strong>{request.status === "accepted" ? `${recipient.name.split(" ")[0]} accepted your request` : "Your request is awaiting a response"}</strong><span>{request.status === "accepted" ? "Continue the conversation" : "View your request"}</span></span><ChevronRight size={19} /></button> : <Button className="full-width" onClick={() => go("people")}>Find alumni who can help</Button>)}
+      </>}
       <section className="people-preview"><div className="section-heading"><h2>Open to helping</h2><button className="text-button" onClick={() => go("people")}>Browse people<ArrowRight size={15} aria-hidden="true" /></button></div><div className="people-preview-list">{people.slice(0, 2).map(p => personCard(p, true))}</div></section>
     </>; break;
 
@@ -831,7 +858,7 @@ export default function AlumniApp() {
     </> : <Empty icon={<Layers3 size={27} />} title="Start with an intent" action={<Button onClick={() => go("create")}>Create an intent</Button>}>A request needs a little context about what you need.</Empty>; break;
 
     case "requests": content = <>{title("Your requests", "Keep track of the help you’ve asked for and the requests you’ve received.")}
-      {incoming && <section><div className="section-heading"><h2>Received</h2></div>{incomingHomeCard()}</section>}
+      {incoming && <section><div className="section-heading"><h2>Received</h2></div>{incomingRequestCard()}</section>}
       {request && <section>
         <div className="section-heading"><h2>Sent</h2></div>
         <button className="request-list-card" onClick={() => go("request")}>

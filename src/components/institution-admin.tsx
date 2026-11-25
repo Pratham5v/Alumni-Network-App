@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, Award, CalendarDays, Check, ChevronRight, Ellipsis, FileText, Heart, Inbox, Layers3, LayoutGrid, Mail, Plus, Search, ShieldCheck, Upload, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, Building2, CalendarDays, Check, ChevronRight, CircleAlert, CircleCheck, ClipboardList, Ellipsis, FileText, Heart, Inbox, Layers3, LayoutGrid, LockKeyhole, Mail, Plus, Search, ShieldCheck, Upload, Users } from "lucide-react";
 import { distinguishedAlumnus, eventDateLabel } from "@/lib/events";
 import { previewAlumniBatch, publicInstitutionEvents, readyAlumni, sampleBatchCsv, sampleJoinCandidate, type AlumniRecord, type Community, type CommunityMember, type ImportRow, type InstitutionAction, type InstitutionState, type TalkDraft } from "@/lib/institution";
 import { recordDifferences, sampleAlumniRecord } from "@/lib/onboarding";
@@ -29,6 +29,7 @@ const navigation = [
 ] as const;
 const reviewStates = { pending: "Needs review", "more-info": "Awaiting alumnus", approved: "Approved" };
 const countLabel = (count: number, singular: string, plural = `${singular}s`) => `${count} ${count === 1 ? singular : plural}`;
+const verificationFields = [["name", "Full name", "name"], ["batch", "Graduation year", "graduation year"], ["degree", "Degree", "degree"], ["branch", "Branch", "branch"]] as const;
 
 function Button({ children, kind = "secondary", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { kind?: "primary" | "secondary" | "light" | "quiet" }) {
   return <button type="button" {...props} className={`inst-button ${kind}`}>{children}</button>;
@@ -115,30 +116,54 @@ function WorkQueue({ state, update, mode, setMode, openRecords, openMembership }
   const ready = readyAlumni(state);
   const membershipRequests = state.communities.reduce((count, community) => count + community.requests.length, 0);
   const mismatches = recordDifferences(review.details);
+  const mismatchTitle = mismatches.length === 1
+    ? `${mismatches[0][0].toUpperCase() + mismatches[0].slice(1)} doesn’t match`
+    : "Submitted details don’t match";
+  const approved = review.status === "approved";
+  const invited = approved && state.records.some(record => record.email === sampleAlumniRecord.email && record.status === "invited");
+  const reviewLabel = approved ? (invited ? "Verified · Invited" : "Verified · Ready to invite") : reviewStates[review.status];
+  const reviewTone = approved ? "green" : review.status === "pending" ? "amber" : "neutral";
   return <>
     <Heading title="Work queue" description="Review verification requests and send alumni invitations." />
     <div className="inst-panel inst-work-grid">
       <div className="inst-queue">
         <h2>Ready for action</h2>
-        <button type="button" className="inst-queue-item" aria-pressed={mode === "review"} onClick={() => setMode("review")}><Chip tone={review.status === "pending" ? "amber" : "neutral"}>{reviewStates[review.status]}</Chip><b>{review.details.name}</b><small>Manual verification</small></button>
+        <button type="button" className="inst-queue-item" aria-pressed={mode === "review"} onClick={() => setMode("review")}><Chip tone={reviewTone}>{reviewLabel}</Chip><b>{review.details.name}</b><small>Manual verification</small></button>
         <button type="button" className="inst-queue-item" aria-pressed={mode === "invites"} onClick={() => setMode("invites")}><b>{ready.length} alumni ready to invite</b><small>Verified records</small></button>
         {membershipRequests > 0 && <button type="button" className="inst-queue-item" onClick={openMembership}><b>{countLabel(membershipRequests, "membership request")}</b><small>Review in Communities</small></button>}
       </div>
       <div className="inst-work-detail">
         {mode === "review" ? <>
-          <div className="inst-between"><div><h2>{review.details.name}</h2><small>Manual verification request</small></div><Chip tone={review.status === "approved" ? "green" : "amber"}>{reviewStates[review.status]}</Chip></div>
-          <div className="inst-table-wrap"><table className="inst-table"><thead><tr><th>Field</th><th>Submitted by alumnus</th><th>BITS record</th></tr></thead><tbody>
-            {([["name", "Name"], ["batch", "Graduation year"], ["degree", "Degree"], ["branch", "Branch"]] as const).map(([key, label]) => <tr key={key} className={mismatches.some(field => field === label.toLowerCase()) ? "inst-mismatch" : undefined}><th scope="row">{label}</th><td>{review.details[key]}</td><td>{sampleAlumniRecord[key]}</td></tr>)}
-          </tbody></table></div>
+          <div className="inst-between inst-review-header"><div><h2>{review.details.name}</h2><small>Manual verification request</small></div><Chip tone={reviewTone}>{reviewLabel}</Chip></div>
+          {mismatches.length > 0 && <div className="inst-review-note mismatch">
+            <CircleAlert size={20} aria-hidden="true" /><div><b>{mismatchTitle}</b><p>Confirm the {mismatches.length === 1 ? "correct " + mismatches[0] : "highlighted details"} before approving this record.</p></div>
+          </div>}
+          {approved && <div className="inst-review-note approved">
+            <CircleCheck size={20} aria-hidden="true" />
+            <div role="status"><b>Record approved</b><p>{invited ? "Invitation sent in the demo." : "The invitation is still pending."}</p></div>
+            {!invited && <Button kind="primary" onClick={() => setMode("invites")}>Go to invitations<ArrowRight size={15} aria-hidden="true" /></Button>}
+          </div>}
+          <div className="inst-review-comparison">
+            {[
+              { label: "Submitted details", details: review.details, Icon: ClipboardList },
+              { label: "Institution record", details: sampleAlumniRecord, Icon: Building2 },
+            ].map(({ label, details, Icon }) => <section key={label} className="inst-review-record">
+              <h3><Icon size={17} aria-hidden="true" />{label}</h3>
+              <dl>{verificationFields.map(([key, field, mismatchKey]) => {
+                const mismatch = mismatches.includes(mismatchKey);
+                return <div key={key} className={mismatch ? "inst-mismatch" : undefined}>
+                  <dt>{field}{mismatch && <span className="sr-only"> (mismatch)</span>}</dt><dd>{details[key]}</dd>
+                </div>;
+              })}</dl>
+            </section>)}
+          </div>
           {review.status === "pending" && <>
-            {mismatches.length > 0 && <p className="inst-hint">Confirm the highlighted details before approving this request.</p>}
             {editing ? <form className="inst-form" onSubmit={event => { event.preventDefault(); if (!message.trim()) return; update({ type: "review-more-info", message }); setEditing(false); }}>
               <label>Message to the alumnus<textarea required maxLength={400} value={message} onChange={event => setMessage(event.target.value)} /></label>
               <div className="inst-actions"><Button onClick={() => setEditing(false)}>Cancel</Button><Button type="submit" kind="primary">Send request</Button></div>
-            </form> : <div className="inst-actions"><Button disabled={mismatches.length > 0} kind={mismatches.length ? "secondary" : "primary"} onClick={() => update({ type: "review-approve" })}>Approve record</Button><Button kind={mismatches.length ? "primary" : "secondary"} onClick={() => { setMessage(mismatches.length ? `Please confirm your ${mismatches.join(", ")} so we can complete verification.` : "Please send further details so we can complete verification."); setEditing(true); }}>Request more information<ArrowRight size={15} /></Button></div>}
+            </form> : <div className="inst-actions inst-review-actions"><Button disabled={mismatches.length > 0} kind={mismatches.length ? "secondary" : "primary"} onClick={() => update({ type: "review-approve" })}>{mismatches.length > 0 && <LockKeyhole size={15} aria-hidden="true" />}Approve record</Button><Button kind={mismatches.length ? "primary" : "secondary"} onClick={() => { setMessage(mismatches.length ? `Please confirm your ${mismatches.join(", ")} so we can complete verification.` : "Please send further details so we can complete verification."); setEditing(true); }}>Request more information<ArrowRight size={15} aria-hidden="true" /></Button></div>}
           </>}
           {review.status === "more-info" && <div className="inst-status" role="status"><b>Message sent in the demo</b><p>{review.message}</p><Button onClick={() => update({ type: "review-sample-reply" })}>Simulate corrected reply</Button></div>}
-          {review.status === "approved" && <div className="inst-status" role="status"><b>Record approved</b><p>The alumnus can enter the app from verification and is ready for an invitation.</p></div>}
           <div className="inst-history-block"><h3>Activity history</h3><History entries={review.activity} /></div>
         </> : <>
           <h2>Invite verified alumni</h2><p className="inst-hint">Each invitation gives a verified alumnus a way to join the network.</p>
