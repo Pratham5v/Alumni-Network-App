@@ -39,6 +39,18 @@ test("saved jobs and referrals are independent of the active intent journey", ()
   assert.deepEqual(demoReducer(next, { type: "toggle-saved-job", jobId }).savedJobIds, []);
 });
 
+test("both privacy controls gate new requests while keeping the existing inbox", () => {
+  const preferences = initialState.profilePreferences;
+  for (const change of [{ available: false }, { incomingRequestsPaused: true }]) {
+    const state = demoReducer(completed(), { type: "profile-preferences", preferences: { ...preferences, ...change } });
+    assert.equal(demoReducer(state, { type: "introduce-incoming" }), state);
+    const resumed = demoReducer(state, { type: "profile-preferences", preferences });
+    assert.ok(demoReducer(resumed, { type: "introduce-incoming" }).incoming);
+    const inbox = received();
+    assert.equal(demoReducer(inbox, { type: "profile-preferences", preferences: { ...preferences, ...change } }).incoming, inbox.incoming);
+  }
+});
+
 test("a request needs an active intent; duplicate submissions keep the original", () => {
   const action = { type: "request", request: { personId: "aarav", message: "A clear ask", commitment: "20-minute call" } } as const;
   assert.equal(demoReducer(initialState, action), initialState);

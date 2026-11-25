@@ -118,11 +118,11 @@ function ProfileSettingsForm({ preferences, onSave }: { preferences: ProfilePref
       <p>Requests and replies control the Requests badge in this demo. Event reminder preferences are saved for this session.</p>
     </fieldset>
     <fieldset className="profile-preference-group">
-      <legend>Availability</legend>
-      <p>Pausing leaves existing conversations open.</p>
-      <Field label="Availability status"><Select value={draft.available ? "open" : "paused"} onChange={e => setDraft({ ...draft, available: e.target.value === "open" })}>
-        <option value="open">Open to helping</option><option value="paused">Paused</option>
-      </Select></Field>
+      <legend>Availability &amp; requests</legend>
+      <label className="profile-toggle"><span>Pause incoming requests</span><input type="checkbox" role="switch" checked={Boolean(draft.incomingRequestsPaused)} onChange={e => setDraft({ ...draft, incomingRequestsPaused: e.target.checked })} /></label>
+      <p>Stops new requests while keeping your profile’s availability status.</p>
+      <label className="profile-toggle"><span>Mark unavailable</span><input type="checkbox" role="switch" checked={!draft.available} onChange={e => setDraft({ ...draft, available: !e.target.checked })} /></label>
+      <p>Shows you as unavailable and stops new requests. Existing conversations stay open.</p>
       <Field label="Preferred format"><Select value={draft.commitment} onChange={e => setDraft({ ...draft, commitment: e.target.value as Commitment })}>
         <option>Chat</option><option>20-minute call</option><option>30-minute call</option>
       </Select></Field>
@@ -216,7 +216,7 @@ export default function AlumniApp() {
   const request = state.request;
   const incoming = state.incoming;
   const confirmationMessage = confirmation?.screen === screen ? confirmation.message : "";
-  const { notifications } = state.profilePreferences;
+  const { notifications, available: availableForRequests, incomingRequestsPaused } = state.profilePreferences;
   const unreadCount = (notifications.replies && request && request.status !== "completed" ? 1 : 0) + (notifications.requests && incoming?.unread ? 1 : 0);
   const firstName = state.profile.name.trim().split(/\s+/)[0] || "Prathmesh";
   const self = { id: "prathmesh", initials: state.profile.name.split(/\s+/).map(name => name[0]).slice(0, 2).join(""), color: "sage" };
@@ -268,8 +268,8 @@ export default function AlumniApp() {
     lastThread.current = { screen, length };
   }, [state.messages.length, incoming?.messages.length, screen]);
   useEffect(() => {
-    if (screen === "home" && request?.status === "completed" && !incoming) dispatch({ type: "introduce-incoming" });
-  }, [screen, request?.status, incoming]);
+    if (screen === "home" && request?.status === "completed" && !incoming && availableForRequests && !incomingRequestsPaused) dispatch({ type: "introduce-incoming" });
+  }, [screen, request?.status, incoming, availableForRequests, incomingRequestsPaused]);
   useEffect(() => {
     if (state.request?.status !== "accepted" || !replySent || state.conversationConfirmed) return;
     const timer = setTimeout(() => dispatch({ type: "confirm-conversation", now: new Date().toISOString() }), 850);
@@ -1066,7 +1066,7 @@ export default function AlumniApp() {
             <button type="button" className="text-button self-profile-link" onClick={() => go("profile-preview")}><Eye size={16} aria-hidden="true" />Preview how alumni see you</button>
           </>}
           {(!preview || available || help) && <section className="alumni-profile-help self-profile-help" data-available={available}>
-            <Tag>{available && <span className="availability-dot" />}{available ? "Open to helping" : "Availability paused"}</Tag>
+            <Tag>{available && <span className="availability-dot" />}{available ? "Open to helping" : "Unavailable"}</Tag>
             <h2><span><MessageCircle size={16} aria-hidden="true" /></span>How I can help</h2>
             {help && <p>{help}</p>}
             {available && <strong><Clock3 size={15} aria-hidden="true" />{format}</strong>}

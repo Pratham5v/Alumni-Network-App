@@ -21,6 +21,7 @@ export type ProfilePreferences = {
   phoneVisibility: ContactVisibility;
   notifications: { requests: boolean; replies: boolean; events: boolean };
   available: boolean;
+  incomingRequestsPaused?: boolean;
   commitment: Commitment;
 };
 export type Intent = {
@@ -85,6 +86,7 @@ const sampleProfilePreferences: ProfilePreferences = {
   phoneVisibility: "private",
   notifications: { requests: true, replies: true, events: false },
   available: true,
+  incomingRequestsPaused: false,
   commitment: "20-minute call",
 };
 export const demoReply = "I’m looking for advice on the product for my new startup. Does tomorrow at 6 PM work for a call?";
@@ -163,7 +165,7 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
       return { ...state, callLink: url, messages: [...state.messages, { id: state.messages.length, from: "you", text }] };
     }
     case "introduce-incoming":
-      if (state.request?.status !== "completed" || state.incoming) return state;
+      if (state.request?.status !== "completed" || state.incoming || !state.profilePreferences.available || state.profilePreferences.incomingRequestsPaused) return state;
       return { ...state, incoming: { status: "pending", unread: true, messages: [], replySent: false, callLink: null, meeting: null } };
     case "read-incoming":
       if (!state.incoming || !state.incoming.unread) return state;
