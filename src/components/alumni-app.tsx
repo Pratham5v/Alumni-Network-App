@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ArrowLeft, ArrowRight, Award, BadgeCheck, BriefcaseBusiness, Building2, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Compass, Eye, GraduationCap, Home, Info, Layers3, Linkedin, LoaderCircle, Mail, MapPin, MessageCircle, Phone, Plus, RotateCcw, Search, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Users, Video, X } from "lucide-react";
 import { demoReducer, demoReply, incomingScenario, initialState, isValidCallLink, sampleCallLink, sampleIntent, sampleOutcome, sampleProfileLinks, type Commitment, type ContactVisibility, type Intent, type Message, type Outcome, type ProfileDetails, type ProfilePreferences } from "@/lib/model";
 import { initialOnboardingState, onboardingReducer, recordDifferences, sampleUniversityAccount } from "@/lib/onboarding";
-import { people, relevanceToIntent, type Person } from "@/lib/people";
+import { people, relevanceToIntent, type Person, type WorkExperience } from "@/lib/people";
 import { googleCalendarUrl, interviewTimeLabel } from "@/lib/calendar";
 import { aiLecture, distinguishedAlumnus, eventDateBadge, eventDateLabel, type AlumniEvent } from "@/lib/events";
 import { publicInstitutionEvents } from "@/lib/institution";
@@ -46,19 +46,47 @@ function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectEle
 }
 function Tag({ children, warm = false }: { children: ReactNode; warm?: boolean }) { return <span className={`tag ${warm ? "warm" : ""}`}>{children}</span>; }
 
+const sampleResumeExperience: WorkExperience[] = [
+  { role: "Software Engineer", organization: "Example Product Studio", dates: "2026–Present", summary: "Builds and maintains APIs for product features.", current: true },
+  { role: "Software Engineering Intern", organization: "Example Engineering Team", dates: "2025–2026", summary: "Helped test integrations and document backend workflows." },
+];
+
+function ExperienceTimeline({ entries }: { entries: WorkExperience[] }) {
+  return <ol className="milestone-list work-experience-timeline">
+    {entries.map(entry => <li key={entry.role + entry.dates} data-current={entry.current || undefined}>
+      <div className="work-experience-date"><span>{entry.dates}</span>{entry.current && <Tag>Current</Tag>}</div>
+      <h3>{entry.role}</h3><strong>{entry.organization}</strong><p>{entry.summary}</p>
+    </li>)}
+  </ol>;
+}
+
 function EditProfileForm({ details, onSave }: { details: ProfileDetails; onSave: (details: ProfileDetails) => void }) {
   const [draft, setDraft] = useState(details);
-  function update(key: keyof ProfileDetails, value: string) { setDraft({ ...draft, [key]: value }); }
+  const [sampleFilled, setSampleFilled] = useState(false);
+  function update(key: Exclude<keyof ProfileDetails, "workExperience">, value: string) { setDraft({ ...draft, [key]: value }); }
   return <form className="form-card" onSubmit={event => {
     event.preventDefault();
     onSave({
       bio: draft.bio.trim(), expertise: draft.expertise.trim(), help: draft.help.trim(),
       email: draft.email.trim(), phone: draft.phone.trim(), linkedin: draft.linkedin.trim(), portfolio: draft.portfolio.trim(),
+      workExperience: draft.workExperience,
     });
   }}>
     <Field label="How I can help"><textarea rows={3} maxLength={180} value={draft.help} onChange={e => update("help", e.target.value)} /></Field>
     <Field label="About"><textarea rows={3} maxLength={280} value={draft.bio} onChange={e => update("bio", e.target.value)} /></Field>
     <Field label="Expertise" hint="Separate skills with commas."><input maxLength={140} value={draft.expertise} onChange={e => update("expertise", e.target.value)} /></Field>
+    <fieldset className="profile-preference-group">
+      <legend>Work experience</legend>
+      <Field label="Upload résumé" hint="Demo only. Selecting a file fills in sample roles. Your file stays on this device.">
+        <input className="resume-file" type="file" accept=".pdf,.doc,.docx,.txt" onChange={event => {
+          if (!event.currentTarget.files?.length) return;
+          setDraft(current => ({ ...current, workExperience: sampleResumeExperience }));
+          setSampleFilled(true);
+        }} />
+      </Field>
+      <div role="status">{sampleFilled && <Confirmation message="Sample work experience added to your draft." />}</div>
+      {!!draft.workExperience?.length && <ExperienceTimeline entries={draft.workExperience} />}
+    </fieldset>
     <fieldset className="profile-preference-group">
       <legend>Contact &amp; links</legend>
       <Field label="Email"><input type="email" maxLength={254} value={draft.email} onChange={e => update("email", e.target.value)} /></Field>
@@ -157,7 +185,7 @@ export default function AlumniApp() {
   const [composeFrom, setComposeFrom] = useState<ComposeFrom>("profile");
   const [commitment, setCommitment] = useState<Commitment>("20-minute call");
   const [outcome, setOutcome] = useState<Partial<Outcome>>(sampleOutcome);
-  const [sheet, setSheet] = useState<"call-link" | "decline" | "alternative" | "attendees" | "demo-google" | ContactPreview | null>(null);
+  const [sheet, setSheet] = useState<"call-link" | "decline" | "alternative" | "attendees" | "demo-google" | "work-experience" | ContactPreview | null>(null);
   const [callLink, setCallLink] = useState(sampleCallLink);
   const [declineMessage, setDeclineMessage] = useState<string>(incomingScenario.decline);
   const [alternativeMessage, setAlternativeMessage] = useState<string>(incomingScenario.alternative);
@@ -168,6 +196,8 @@ export default function AlumniApp() {
   const conversationEnd = useRef<HTMLDivElement>(null);
   const lastThread = useRef<{ screen: Screen; length: number } | null>(null);
   const person = people.find(p => p.id === personId) || people[0];
+  const viewingOwnExperience = screen === "my-profile" || screen === "profile-preview";
+  const experienceEntries = viewingOwnExperience ? state.profileDetails.workExperience : person.workExperience;
   const recipient = people.find(p => p.id === state.request?.personId) || person;
   const alumniEvents = publicInstitutionEvents(state.institution);
   const featuredEvent = alumniEvents.find(event => event.id === aiLecture.id) ?? aiLecture;
@@ -834,6 +864,9 @@ export default function AlumniApp() {
             <p>{person.help}</p>
             <strong><Clock3 size={15} aria-hidden="true" />{person.commitment}</strong>
           </section>
+          {!!person.workExperience?.length && <button type="button" className="alumni-work-experience" aria-haspopup="dialog" onClick={() => setSheet("work-experience")}>
+            <BriefcaseBusiness size={18} aria-hidden="true" />Work experience<ChevronRight size={17} aria-hidden="true" />
+          </button>}
           <section className="alumni-profile-section"><h2>Expertise</h2><ul className="alumni-profile-chips">{person.expertise.map(topic => <li key={topic}>{topic}</li>)}</ul></section>
           <section className="alumni-profile-section"><h2>About</h2><p>{person.about}</p></section>
           {!!person.currentIntents?.length && <section className="alumni-profile-section">
@@ -1039,6 +1072,9 @@ export default function AlumniApp() {
             {available && <strong><Clock3 size={15} aria-hidden="true" />{format}</strong>}
             {!preview && <button type="button" className="text-button self-profile-link" onClick={() => go("profile-settings")}>Manage availability<ChevronRight size={15} aria-hidden="true" /></button>}
           </section>}
+          {!!state.profileDetails.workExperience?.length && <button type="button" className="alumni-work-experience" aria-haspopup="dialog" onClick={() => setSheet("work-experience")}>
+            <BriefcaseBusiness size={18} aria-hidden="true" />Work experience<ChevronRight size={17} aria-hidden="true" />
+          </button>}
           {bio && <section className="alumni-profile-section"><h2>About</h2><p>{bio}</p></section>}
           {expertiseList.length > 0 && <section className="alumni-profile-section"><h2>Expertise</h2><ul className="alumni-profile-chips">{expertiseList.map(skill => <li key={skill}>{skill}</li>)}</ul></section>}
           <section className="alumni-profile-section"><h2>Communities</h2><ul className="alumni-profile-chips community-chips">{communities.map(community => <li key={community}>{community}</li>)}</ul></section>
@@ -1102,7 +1138,7 @@ export default function AlumniApp() {
       <button className="account-button" aria-label="Your profile" onClick={() => go("my-profile")}><Avatar person={self} size="small" /><span className="account-name">{firstName}</span></button>
     </header>}
     <main id="main-content" className={screen === "welcome" ? "welcome-main" : usesProfileLayout ? "alumni-profile" : screen === "event" ? "event-page" : "main-content"} key={screen}>{content}</main>
-    <Sheet open={sheet !== null} title={contactPreview?.title ?? (sheet === "demo-google" ? "Choose a demo account" : sheet === "attendees" ? "Who’s coming" : sheet === "call-link" ? "Share a call link" : sheet === "decline" ? "Decline request" : "Suggest an alternative")} onClose={() => setSheet(null)}>
+    <Sheet open={sheet !== null} title={contactPreview?.title ?? (sheet === "work-experience" ? "Work experience" : sheet === "demo-google" ? "Choose a demo account" : sheet === "attendees" ? "Who’s coming" : sheet === "call-link" ? "Share a call link" : sheet === "decline" ? "Decline request" : "Suggest an alternative")} onClose={() => setSheet(null)}>
       {sheet === "demo-google" ? <>
         <p className="field-hint">Select the sample university account to continue the walkthrough.</p>
         <button type="button" className="verification-identity demo-account-option" onClick={() => { updateOnboarding({ type: "select-account" }); go("verify"); }}>
@@ -1118,6 +1154,10 @@ export default function AlumniApp() {
             <div><strong>{attendee.name}{attendee.id === self.id && " (you)"}</strong><span>{attendee.role} · Class of {attendee.batch}</span></div>
           </li>)}
         </ul>
+      </> : sheet === "work-experience" ? <>
+        <p className="work-experience-name">{viewingOwnExperience ? state.profile.name : person.name}</p>
+        {viewingOwnExperience && <p className="field-hint">Sample work experience</p>}
+        <ExperienceTimeline entries={experienceEntries ?? []} />
       </> : contactPreview ? <p className="alumni-contact-value">{contactPreview.value}</p> : sheet === "call-link" ? <form onSubmit={e => { e.preventDefault(); if (!isValidCallLink(callLink.trim())) return; dispatch({ type: "share-call-link", url: callLink, target: "sent" }); setSheet(null); setConfirmation({ screen: "conversation", message: "Call link shared in the conversation." }); }}>
         <Field label="Call link"><input type="url" required value={callLink} onChange={e => setCallLink(e.target.value)} /></Field>
         <p className="field-hint">This sample link is shared in the chat. No meeting opens.</p>

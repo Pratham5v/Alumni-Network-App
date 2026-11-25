@@ -1,6 +1,7 @@
 import { tomorrowInterview, type InterviewMeeting } from "./calendar";
 import { initialInstitutionState, institutionReducer, publicInstitutionEvents, type InstitutionAction, type InstitutionState } from "./institution";
 import { jobs } from "./jobs";
+import type { WorkExperience } from "./people";
 
 export type Profile = { name: string; batch: string; role: string; location: string };
 export type Commitment = "20-minute call" | "30-minute call" | "Chat";
@@ -12,6 +13,7 @@ export type ProfileDetails = {
   phone: string;
   linkedin: string;
   portfolio: string;
+  workExperience?: WorkExperience[];
 };
 export type ContactVisibility = "private" | "accepted-request" | "alumni";
 export type ProfilePreferences = {
