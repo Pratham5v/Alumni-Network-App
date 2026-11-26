@@ -236,6 +236,10 @@ input::placeholder, textarea::placeholder { color: #687a75; }
 .welcome-main { min-height: 100dvh; }
 .welcome { min-height: 100dvh; padding: 18px var(--gutter) 23px; display: flex; flex-direction: column; gap: 18px; }
 .welcome-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.welcome-top-links { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; column-gap: 14px; }
+.university-entry { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; color: var(--teal-dark); font-size: 13px; font-weight: 650; }
+.university-entry:hover { text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 420px) { .welcome-top-links .demo-label { display: none; } }
 .demo-label { font-size: 11px; font-weight: 650; color: var(--teal-dark); background: var(--pale); padding: 5px 8px; border-radius: 20px; }
 .welcome-hero { display: grid; gap: 17px; margin-block: clamp(15px, 4dvh, 35px) auto; }
 .welcome-copy h1 { font-size: clamp(35px,9vw,49px); line-height: 1.03; letter-spacing: -.06em; max-width: 16ch; margin: 0 0 11px; }

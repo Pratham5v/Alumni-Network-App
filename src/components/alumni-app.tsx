@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowLeft, ArrowRight, Award, BadgeCheck, BriefcaseBusiness, Building2, CalendarDays, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Compass, Eye, GraduationCap, Home, Info, Layers3, Linkedin, LoaderCircle, Mail, MapPin, MessageCircle, Phone, Plus, RotateCcw, Search, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Users, Video, X } from "lucide-react";
 import { demoReducer, demoReply, incomingScenario, initialState, isValidCallLink, sampleCallLink, sampleIntent, sampleOutcome, sampleProfileLinks, type Commitment, type ContactVisibility, type Intent, type Message, type Outcome, type ProfileDetails, type ProfilePreferences } from "@/lib/model";
 import { initialOnboardingState, onboardingReducer, recordDifferences, sampleUniversityAccount } from "@/lib/onboarding";
@@ -465,7 +466,7 @@ export default function AlumniApp() {
 
   switch (screen) {
     case "welcome": content = <div className="welcome">
-      <div className="welcome-top"><a className="wordmark" href="#welcome" onClick={e => { e.preventDefault(); go("welcome"); }}><Layers3 size={25} strokeWidth={1.7} />alumni<span className="wordmark-period">.</span></a><span className="demo-label">Interactive demo</span></div>
+      <div className="welcome-top"><a className="wordmark" href="#welcome" onClick={e => { e.preventDefault(); go("welcome"); }}><Layers3 size={25} strokeWidth={1.7} />alumni<span className="wordmark-period">.</span></a><div className="welcome-top-links"><Link className="university-entry" href="/universities">For universities <ArrowRight size={15} aria-hidden="true" /></Link><span className="demo-label">Interactive demo</span></div></div>
       <div className="welcome-hero">
         <div className="welcome-copy">
           <p className="welcome-pretext">Your community. A little closer.</p>
