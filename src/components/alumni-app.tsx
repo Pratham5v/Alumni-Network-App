@@ -13,21 +13,24 @@ import { publicInstitutionEvents } from "@/lib/institution";
 import { isCampaignOpen, todayInIndia } from "@/lib/fundraising";
 import { alumniJobPosterId, defaultJobFilters, jobs } from "@/lib/jobs";
 import InstitutionAdmin from "./institution-admin";
+import { initialMentorship, maya, mentorshipReducer } from "@/lib/mentorship";
+import { LetterCard, LetterExchange, MayaRelationship, MentorshipJourney, MentorshipProposal } from "./mentorship";
 import { CampaignList, CampaignPresentation, ExploreHub, PledgeSupport } from "./explore";
 import { CommunityDetail, ExploreCommunities, JobBoard, JobDetail, ShareJobForm, type CommunityFilters } from "./explore-directory";
 import "./institution-admin.css";
 
-type Screen = "welcome" | "walkthroughs" | "onboard" | "verify" | "admin" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "profile-edit" | "profile-settings" | "profile-preview" | "received-request" | "received-conversation" | "distinguished-profile" | "explore" | "events" | "event" | "jobs" | "job" | "share-job" | "communities" | "community" | "campaigns" | "campaign";
+type Screen = "welcome" | "walkthroughs" | "onboard" | "verify" | "admin" | "home" | "create" | "intent" | "intents" | "people" | "profile" | "mentor-proposal" | "mentorship" | "mentor-letters" | "compose" | "requests" | "request" | "conversation" | "outcome" | "success" | "my-profile" | "profile-edit" | "profile-settings" | "profile-preview" | "received-request" | "received-conversation" | "distinguished-profile" | "explore" | "events" | "event" | "jobs" | "job" | "share-job" | "communities" | "community" | "campaigns" | "campaign";
 const exploreScreens: Screen[] = ["explore", "events", "event", "jobs", "job", "share-job", "communities", "community", "campaigns", "campaign"];
-const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "profile-edit", "profile-settings", "profile-preview", "received-request", "received-conversation", "distinguished-profile", ...exploreScreens];
+const appScreens: Screen[] = ["home", "create", "intent", "intents", "people", "profile", "mentor-proposal", "mentorship", "mentor-letters", "compose", "requests", "request", "conversation", "outcome", "success", "my-profile", "profile-edit", "profile-settings", "profile-preview", "received-request", "received-conversation", "distinguished-profile", ...exploreScreens];
 type IntentForm = Omit<Intent, "status">;
 type ContactPreview = { title: string; value: string };
 type EventPage = { id: string; from: "events" | "distinguished-profile" };
 type ComposeFrom = "people" | "profile";
-type NavigationTarget = EventPage | { campaignId: string } | { directoryId: string } | { composeFrom: ComposeFrom };
+type NavigationTarget = EventPage | { campaignId: string } | { directoryId: string } | { composeFrom: ComposeFrom } | { personId: string };
 const defaultEventPage: EventPage = { id: aiLecture.id, from: "events" };
 const defaultCommunityFilters: CommunityFilters = { query: "", mine: false };
-const alumniBatches = [...new Set([...people, distinguishedAlumnus].map(alumnus => alumnus.batch))].sort((a, b) => Number(b) - Number(a));
+const directoryPeople = [...people, maya];
+const alumniBatches = [...new Set([...directoryPeople, distinguishedAlumnus].map(alumnus => alumnus.batch))].sort((a, b) => Number(b) - Number(a));
 const riya = { id: "riya", initials: "RS", color: "sage" };
 
 function Button({ children, variant = "primary", busy, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "quiet"; busy?: boolean }) {
@@ -199,6 +202,7 @@ function Sheet({ open, title, onClose, children }: { open: boolean; title: strin
 
 export default function AlumniApp() {
   const [state, dispatch] = useReducer(demoReducer, initialState);
+  const [mentorship, updateMentorship] = useReducer(mentorshipReducer, initialMentorship);
   const [screen, setScreen] = useState<Screen>("welcome");
   const [onboarding, updateOnboarding] = useReducer(onboardingReducer, initialOnboardingState);
   const [intentForm, setIntentForm] = useState<IntentForm>(sampleIntent);
@@ -229,10 +233,10 @@ export default function AlumniApp() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const conversationEnd = useRef<HTMLDivElement>(null);
   const lastThread = useRef<{ screen: Screen; length: number } | null>(null);
-  const person = people.find(p => p.id === personId) || people[0];
+  const person = directoryPeople.find(p => p.id === personId) || people[0];
   const viewingOwnExperience = screen === "my-profile" || screen === "profile-preview";
   const experienceEntries = viewingOwnExperience ? state.profileDetails.workExperience : person.workExperience;
-  const recipient = people.find(p => p.id === state.request?.personId) || person;
+  const recipient = directoryPeople.find(p => p.id === state.request?.personId) || person;
   const alumniEvents = publicInstitutionEvents(state.institution);
   const featuredEvent = alumniEvents.find(event => event.id === aiLecture.id) ?? aiLecture;
   const selectedEvent = alumniEvents.find(event => event.id === eventPage.id) ?? featuredEvent;
@@ -268,13 +272,15 @@ export default function AlumniApp() {
     const campaign = target && "campaignId" in target ? target.campaignId : undefined;
     const directory = target && "directoryId" in target ? target.directoryId : undefined;
     const composeFrom = target && "composeFrom" in target ? target.composeFrom : undefined;
+    const person = target && "personId" in target ? target.personId : undefined;
+    if (person) setPersonId(person);
     if (event) setEventPage(event);
     if (campaign) setCampaignId(campaign);
     if (directory) setDirectoryId(directory);
     if (composeFrom) setComposeFrom(composeFrom);
     setMatchToIntent(match);
     const recordId = event?.id ?? campaign ?? directory;
-    window.history.pushState({ screen: next, event, campaign, directory, composeFrom, match }, "", recordId ? `#${next}/${recordId}` : `#${next}`);
+    window.history.pushState({ screen: next, event, campaign, directory, composeFrom, person, match }, "", recordId ? `#${next}/${recordId}` : `#${next}`);
     setScreen(next);
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
@@ -283,6 +289,7 @@ export default function AlumniApp() {
     const onBack = (event: PopStateEvent) => {
       setSheet(null);
       setConfirmation(null);
+      if (event.state?.person) setPersonId(event.state.person);
       if (event.state?.screen === "event") setEventPage(event.state.event ?? defaultEventPage);
       if (event.state?.screen === "campaign") setCampaignId(event.state.campaign ?? null);
       if (event.state?.screen === "job" || event.state?.screen === "community") setDirectoryId(event.state.directory ?? null);
@@ -352,7 +359,10 @@ export default function AlumniApp() {
       {title(heading, description)}
     </>;
   }
-  function openPerson(p: Person) { setPersonId(p.id); go("profile", undefined, undefined, Boolean(matchedIntent)); }
+  function openPerson(p: Person) { go("profile", undefined, { personId: p.id }, Boolean(matchedIntent)); }
+  function backToMaya() {
+    return <button type="button" className="back-link" onClick={() => openPerson(maya)}><ArrowLeft size={19} aria-hidden="true" />Maya’s profile</button>;
+  }
   function discoverForIntent() { go("people", undefined, undefined, true); }
   function changeIntentMatch(match: boolean) {
     setMatchToIntent(match);
@@ -398,6 +408,7 @@ export default function AlumniApp() {
     timers.current.forEach(clearTimeout); timers.current = [];
     setJobFilters(defaultJobFilters);
     setCommunityFilters(defaultCommunityFilters);
+    updateMentorship({ type: "reset" });
     dispatch({ type: "reset" }); updateOnboarding({ type: "reset" }); setBusy(false); setIntentForm(sampleIntent); setOutcome(sampleOutcome); clearDiscoveryFilters(); setFiltersOpen(false); go("welcome");
   }
   function openReceived() { dispatch({ type: "read-incoming" }); go("received-request"); }
@@ -479,7 +490,7 @@ export default function AlumniApp() {
 
   const searchTerm = search.toLowerCase().trim();
   const showingDistinguishedOnly = !matchedIntent && distinguishedOnly;
-  const filteredPeople = people.filter(p => {
+  const filteredPeople = directoryPeople.filter(p => {
     const words = `${p.name} ${p.role} ${p.expertise.join(" ")} ${p.help}`.toLowerCase();
     return !showingDistinguishedOnly && words.includes(searchTerm) && (!batchFilter || p.batch === batchFilter)
       && (location === "All locations" || p.location === location)
@@ -888,6 +899,27 @@ export default function AlumniApp() {
     }
 
     case "profile": {
+      if (person.id === maya.id) {
+        content = <>
+          <header className="alumni-profile-header">{back("people", "People", Boolean(matchedIntent))}<span>Alumni profile</span></header>
+          <div className="alumni-profile-content">
+            <div className="alumni-profile-identity">
+              <Avatar person={maya} size="large" />
+              <div><h1 ref={headingRef} tabIndex={-1}>{maya.name}</h1><p>{maya.role} · {maya.company}</p>
+                <div className="meta"><span><MapPin size={15} aria-hidden="true" />{maya.location}</span><span><GraduationCap size={15} aria-hidden="true" />Class of {maya.batch}</span></div>
+              </div>
+            </div>
+            <MayaRelationship openLetters={() => go("mentor-letters", undefined, { personId: maya.id })} />
+          </div>
+          <footer className="alumni-profile-action">
+            <p className="mentor-footer-note">Weekly meetings for two months</p>
+            <Button className="full-width" onClick={() => go(mentorship.phase === "idle" ? "mentor-proposal" : "mentorship", undefined, { personId: maya.id })}>
+              {mentorship.phase === "idle" ? "Propose mentorship" : "View mentorship"}<ArrowRight size={18} aria-hidden="true" />
+            </Button>
+          </footer>
+        </>;
+        break;
+      }
       const contacts = [
         { label: "LinkedIn", title: "Sample LinkedIn profile", value: `linkedin.com/in/demo-${person.name.toLowerCase().replaceAll(" ", "-")}`, icon: <Linkedin size={19} aria-hidden="true" /> },
         {
@@ -935,6 +967,22 @@ export default function AlumniApp() {
       break;
     }
 
+    case "mentor-proposal": content = <>
+      {backToMaya()}
+      <MentorshipProposal mentorship={mentorship} update={updateMentorship} heading={headingRef} onSent={() => go("mentorship", undefined, { personId: maya.id })} />
+    </>; break;
+
+    case "mentorship": content = <>
+      {backToMaya()}
+      {mentorship.phase === "idle" ? <MentorshipProposal mentorship={mentorship} update={updateMentorship} heading={headingRef} onSent={() => go("mentorship", undefined, { personId: maya.id })} /> :
+        <MentorshipJourney mentorship={mentorship} update={updateMentorship} heading={headingRef} onLetters={() => go("mentor-letters", undefined, { personId: maya.id })} />}
+    </>; break;
+
+    case "mentor-letters": content = <>
+      {backToMaya()}
+      <LetterExchange mentorship={mentorship} update={updateMentorship} heading={headingRef} />
+    </>; break;
+
     case "compose": content = <>
       {back(composeFrom, composeFrom === "people" ? "People" : "Alumni profile", Boolean(matchedIntent))}
       {request ? <>{title("Request already sent")}<Button onClick={() => go("request")}>View request<ArrowRight size={17} aria-hidden="true" /></Button></> : activeIntent ? <>
@@ -975,7 +1023,13 @@ export default function AlumniApp() {
           <h3>{job.title}</h3><p className="small muted">{job.company} · {people.find(person => person.id === job.sharedBy)?.name}</p>
         </button>)}
       </div></section>}
-      {!request && !incoming && referralJobs.length === 0 && <Empty icon={<MessageCircle size={27} />} title="Good conversations start here" action={<Button onClick={() => go(intent ? "people" : "create")}>{intent ? "Discover alumni" : "Create an intent"}</Button>}>Find someone open to helping and send a specific request.</Empty>}
+      {mentorship.phase !== "idle" && <section className="mentor-profile-letters">
+        <button type="button" className="request-list-card" onClick={() => go("mentorship", undefined, { personId: maya.id })}>
+          <div className="row between"><Tag>{mentorship.phase === "proposed" ? "Mentorship proposal" : mentorship.phase === "active" ? "Active mentorship" : "Mentorship completed"}</Tag><ChevronRight size={17} aria-hidden="true" /></div>
+          <h2>{mentorship.goal}</h2><p className="small muted">Mentor: Maya Rao</p>
+        </button>
+      </section>}
+      {!request && !incoming && referralJobs.length === 0 && mentorship.phase === "idle" && <Empty icon={<MessageCircle size={27} />} title="Good conversations start here" action={<Button onClick={() => go(intent ? "people" : "create")}>{intent ? "Discover alumni" : "Create an intent"}</Button>}>Find someone open to helping and send a specific request.</Empty>}
     </>; break;
 
     case "request": content = request ? <>
@@ -1137,6 +1191,10 @@ export default function AlumniApp() {
               {showPhone && <button type="button" aria-label="Phone" title="Phone" onClick={() => setSheet({ title: "Phone", value: phone })}><Phone size={18} aria-hidden="true" /></button>}
             </div>
           </section>}
+          {mentorship.letters.some(letter => letter.featured) && <section className="mentor-profile-letters">
+            <h2>Letters</h2>
+            {mentorship.letters.filter(letter => letter.featured).map(letter => <LetterCard key={letter.id} letter={letter} speaker={maya.name} />)}
+          </section>}
           {activeIntent && <section className="alumni-profile-section">
             <h2>{preview ? "Current intent" : "Your intent"}</h2>
             {preview ? <ul className="alumni-profile-intents"><li><strong>{activeIntent.title}</strong><p>{activeIntent.commitment}</p></li></ul> :
@@ -1180,7 +1238,7 @@ export default function AlumniApp() {
 
   const isAlumniProfile = screen === "profile" || screen === "distinguished-profile";
   const usesProfileLayout = isAlumniProfile || screen === "my-profile" || screen === "profile-preview";
-  const selectedTab = exploreScreens.includes(screen) ? "explore" : ["create", "intent", "intents"].includes(screen) ? "intents" : screen === "people" || isAlumniProfile ? "people" : ["compose", "requests", "request", "conversation", "outcome", "success", "received-request", "received-conversation"].includes(screen) ? "requests" : "home";
+  const selectedTab = exploreScreens.includes(screen) ? "explore" : ["create", "intent", "intents"].includes(screen) ? "intents" : ["people", "mentor-proposal", "mentor-letters"].includes(screen) || isAlumniProfile ? "people" : ["mentorship", "compose", "requests", "request", "conversation", "outcome", "success", "received-request", "received-conversation"].includes(screen) ? "requests" : "home";
   return <div className={`app-shell${inside ? " workspace-shell" : ""}`} data-screen={screen}>
     {inside && <header className="app-header">
       <button className="wordmark" onClick={() => go("home")} aria-label="Alumni home"><Layers3 size={23} strokeWidth={1.7} aria-hidden="true" />alumni<span className="wordmark-period">.</span></button>
