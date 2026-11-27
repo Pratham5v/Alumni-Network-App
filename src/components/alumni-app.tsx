@@ -33,6 +33,40 @@ const riya = { id: "riya", initials: "RS", color: "sage" };
 function Button({ children, variant = "primary", busy, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "quiet"; busy?: boolean }) {
   return <button {...props} disabled={props.disabled || busy} className={`button ${variant} ${className}`} aria-busy={busy || undefined}>{busy && <LoaderCircle size={18} className="spin" />}{children}</button>;
 }
+function UniversityPicker() {
+  const picker = useRef<HTMLDetailsElement>(null);
+  const trigger = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    function closeOutside(event: PointerEvent) {
+      const menu = picker.current;
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+    }
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, []);
+
+  return <details ref={picker} className="university-picker" onKeyDown={event => {
+    if (event.key !== "Escape" || !event.currentTarget.open) return;
+    event.preventDefault();
+    event.currentTarget.open = false;
+    trigger.current?.focus();
+  }}>
+    <summary ref={trigger}>BITS <ChevronDown size={14} aria-hidden="true" /></summary>
+    <div className="university-options">
+      <div className="university-option current" aria-current="true">
+        <Building2 size={16} aria-hidden="true" />
+        <span><strong>BITS Pilani</strong><small>Current network</small></span>
+        <Check size={17} aria-hidden="true" />
+      </div>
+      <button type="button" className="university-option" title="Demo preview only">
+        <Building2 size={16} aria-hidden="true" />
+        <span><strong>Westbridge University</strong></span>
+      </button>
+    </div>
+  </details>;
+}
+
 function Avatar({ person, size = "normal" }: { person: Pick<Person, "initials" | "color"> & { id?: string }; size?: "normal" | "large" | "small" }) {
   return <span className={`avatar ${person.id ? "portrait" : person.color} ${size}`} aria-hidden="true">
     {person.id ? <Image src={`/avatars/${person.id}.svg`} width={78} height={78} alt="" unoptimized /> : person.initials}
@@ -604,7 +638,7 @@ export default function AlumniApp() {
       break;
     }
 
-    case "home": content = <>{title(`Hi, ${firstName}.`, undefined, "BITS alumni network")}
+    case "home": content = <>{title(`Hi, ${firstName}.`, undefined, "BITS Alumni network")}
       {incoming && incomingRequestCard(true)}
       {!intent ? <section className="home-prompt"><div className="prompt-icon"><MessageCircle size={25} strokeWidth={1.6} /></div><h2>What could your community help with?</h2><p>A fresh perspective, a career question, or a conversation with someone who’s been there.</p><Button onClick={() => go("create")}><Plus size={19} />Create an intent</Button></section> : <>
         <div className="section-heading"><h2>Your intent</h2><button className="text-button" onClick={() => go("intents")}>View all</button></div>
@@ -1150,6 +1184,7 @@ export default function AlumniApp() {
   return <div className={`app-shell${inside ? " workspace-shell" : ""}`} data-screen={screen}>
     {inside && <header className="app-header">
       <button className="wordmark" onClick={() => go("home")} aria-label="Alumni home"><Layers3 size={23} strokeWidth={1.7} aria-hidden="true" />alumni<span className="wordmark-period">.</span></button>
+      <UniversityPicker key={screen} />
       <button className="account-button" aria-label="Your profile" onClick={() => go("my-profile")}><Avatar person={self} size="small" /><span className="account-name">{firstName}</span></button>
     </header>}
     <main id="main-content" className={screen === "welcome" ? "welcome-main" : usesProfileLayout ? "alumni-profile" : screen === "event" ? "event-page" : "main-content"} key={screen}>{content}</main>
