@@ -1,51 +1,55 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Building2, ShieldCheck, Users } from "lucide-react";
+import { ArrowRight, Database, Mail, Settings2 } from "lucide-react";
+import OfferHeader from "./offer-header";
+import OfferAudience from "./offer-audience";
 import styles from "./universities.module.css";
 
-export const metadata: Metadata = { title: "Alumni for universities" };
+export const metadata: Metadata = { title: "What we offer | Alumni for universities" };
 
-const highlights = [
-  { Icon: Users, title: "Give alumni a reason to return", text: "Help graduates find relevant people, ask for help, and give back when they can." },
-  { Icon: Building2, title: "Bring alumni operations together", text: "Verify graduates, reach the right groups, and manage communities, events, and fundraising." },
-  { Icon: ShieldCheck, title: "Make the network your own", text: "Choose your branding, domain, and which features your graduates can use." },
-];
-
-export default function UniversitiesPage() {
+export default function UniversityOfferPage() {
   return (
-    <main>
-      <section className={styles.landingHero}>
-        <div className={styles.container + " " + styles.heroGrid}>
-          <div>
-            <p className={styles.eyebrow}>For universities</p>
-            <h1>Keep your alumni connected long after graduation.</h1>
-            <p className={styles.lead}>Give graduates a place to find and help each other, and give your alumni relations team one place to run the network.</p>
-            <Link href="/universities/what-we-offer" className={styles.primary}>See what we offer <ArrowRight size={18} aria-hidden="true" /></Link>
+    <>
+      <OfferHeader />
+      <main>
+        <section className={styles.offerHero}>
+          <div className={styles.container + " " + styles.heroGrid}>
+            <div>
+              <p className={styles.eyebrow}>For universities</p>
+              <h1>A complete university network application <span className={styles.swish}>for your university<svg viewBox="0 0 320 18" preserveAspectRatio="none" aria-hidden="true"><path d="M4 13C86 5 196 3 316 10" fill="none" stroke="currentColor" strokeWidth="7" strokeLinecap="round" /></svg></span></h1>
+              <p className={styles.lead}>Engage alumni, build stronger communities, and drive your institution’s long-term impact - all in one platform.</p>
+              <Link className={styles.primary} href="/universities/register">Register your university <ArrowRight size={18} aria-hidden="true" /></Link>
+            </div>
+            <div className={styles.campus}>
+              <Image src="/universities/campus.webp" alt="" width={535} height={280} unoptimized fetchPriority="high" />
+            </div>
           </div>
-          <aside className={styles.landingExample} aria-label="Example alumni request">
-            <p className={styles.exampleLabel}><Building2 size={17} aria-hidden="true" /> Your university’s alumni network</p>
-            <div className={styles.exampleCard}>
-              <p className={styles.eyebrow}>Alumni request</p>
-              <h2>“I’d love feedback on my startup idea.”</h2>
-              <div className={styles.exampleMatch}>
-                <Image src="/avatars/aarav.svg" alt="" width={42} height={42} />
-                <div><strong>Aarav Shah</strong><p>Product Manager · Open to helping</p></div>
+        </section>
+
+        <section className={styles.container + " " + styles.offerContent} aria-label="Platform capabilities">
+          <OfferAudience />
+          <div className={styles.deployment}>
+            <div>
+              <Database size={24} aria-hidden="true" />
+              <div>
+                <h2>Hosting &amp; data separation</h2>
+                <p>Planned shared platform with isolated data, Row-Level Security (RLS), and access control.</p>
+                <div className={styles.deploymentContact}>
+                  <p>Dedicated databases and university-hosted deployment by request.</p>
+                  <button className={styles.contact} type="button" aria-label="Contact us about hosting" title="Contact us about dedicated databases or university hosting">
+                    <Mail size={16} aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             </div>
-            <p className={styles.exampleCaption}>From a current need to a conversation with someone who can help.</p>
-          </aside>
-        </div>
-      </section>
-      <section className={styles.container + " " + styles.highlights} aria-label="Platform highlights">
-        {highlights.map(({ Icon, title, text }) => (
-          <div key={title}>
-            <Icon size={24} aria-hidden="true" />
-            <h2>{title}</h2>
-            <p>{text}</p>
+            <div>
+              <Settings2 size={24} aria-hidden="true" />
+              <div><h2>Branding &amp; integrations</h2><p>Custom domains, university branding, email sender domains, CRM sync, and donation gateways.</p></div>
+            </div>
           </div>
-        ))}
-      </section>
-    </main>
+        </section>
+      </main>
+    </>
   );
 }
